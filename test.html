@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>DPAA Testing Software</title>
+</head>
+
+<canvas class="canvas" id="gridCanvas" width="0" height="0"></canvas>    
+<canvas id="drawCanvas" width="0" height="0"></canvas>    
+<canvas id="figureCanvas" width="0" height="0"></canvas>    
+<canvas id="uiCanvas" width="0" height="0"></canvas>
+<style>
+    body {
+        width: 100%;
+        height: 100%;
+        margin: 0px;
+        padding: 0px;
+        overflow: hidden;
+        display: block;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+    }
+    canvas {
+        position: absolute;
+    }
+</style>
+
+<!-- Colors: FFFFFF, 4F3564, 000000 -->
+<!-- Font Awesome by Dave Gandy - http://fontawesome.io -->    
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+
+<script src="gen-buttons.js"></script>
+<script src="gen-math.js"></script>
+<script src="gen-figure.js"></script>
+<script src="test-prompt.js"></script>
+<script src="test-redraw.js"></script>
+<script src="test-end.js"></script>
+<script src="test-touchListener.js"></script>
+
+
+<script>
+//Constant Declarations----------------------------------------------------------------------------
+const PI = Math.PI;
+const TAU = 2*Math.PI;
+
+const UI_WIDTH = 100;
+
+const W = screen.height-UI_WIDTH;
+const H = screen.width-20;
+
+const UI_CENTER = W+UI_WIDTH/2;
+
+const GRID_SIZE = W/6;
+const ZOOM_SENS = 0.002;
+const MAX_ZOOM = 500;
+const THETA_RESOLUTION = 400;
+
+const SLIDER_Y1 = 110;
+const SLIDER_Y2 = 280;
+const UI_BRUSH_RAD = 18;
+const MAX_BRUSH_SIZE = parseInt(JSON.parse(localStorage.maxBrushSize))/768*H; //5 pixels on 1024x768
+const MIN_BRUSH_SIZE = parseInt(JSON.parse(localStorage.minBrushSize))/768*H;
+const BRUSH_DELTA = (MAX_BRUSH_SIZE-MIN_BRUSH_SIZE)/6;
+
+const DRAW_COLOR = "#4F3564";
+const ERASE_COLOR = "#FFFFFF";
+
+const RENDER_GRID = JSON.parse(localStorage.displayGrid) == "true";
+const SELECTED_FIGURE = figures[parseInt(JSON.parse(localStorage.selectedFigure))];
+const IS_TEST = JSON.parse(sessionStorage.isTest) == "true";
+
+//DO NOT CHANGE - STANDARDIZES TEST RESULTS
+const FIGURE_SCALE = 0.8*H;
+const SCORE_AREA_SIZE = 4000; //CANNOT EXCEED 4096px by 4096px DUE TO iOS/SAFARI LIMITATIONS
+
+
+//Canvas Setup and Styling-------------------------------------------------------------------------
+var gridCanvas = document.getElementById('gridCanvas')
+var gridCtx = gridCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
+
+var drawCanvas = document.getElementById('drawCanvas')
+var drawCtx = drawCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
+
+var figureCanvas = document.getElementById('figureCanvas')
+var figureCtx = figureCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
+
+var uiCanvas = document.getElementById('uiCanvas')
+var uiCtx = uiCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
+
+gridCanvas.width = W; gridCanvas.height = H;
+drawCanvas.width = W; drawCanvas.height = H;
+figureCanvas.width = W; figureCanvas.height = H;
+
+uiCanvas.width = W+UI_WIDTH; uiCanvas.height = H;
+
+gridCtx.strokeStyle = "black";
+
+drawCtx.lineCap = "round";
+drawCtx.lineJoin = "round";
+
+figureCtx.strokeStyle = "black";
+
+uiCtx.textAlign = "center";
+uiCtx.textBaseline = "middle";
+uiCtx.lineCap = "round";
+
+
+//Variable Declarations----------------------------------------------------------------------------
+var oldGridSize = GRID_SIZE;
+
+var offsetX = W/2;
+var offsetY = H/2;
+var zoomX = 0;
+var zoomY = 0;
+var zoom = 1;
+var lastZoomed = false;
+
+var zoomGestureDist;
+var panX;
+var panY;
+var dynamicGridSize;
+
+var brushSize = lerp(MIN_BRUSH_SIZE, MAX_BRUSH_SIZE, parseFloat(JSON.parse(localStorage.defaultBrushPercentage))/100);
+var drawWithFinger = !IS_TEST && JSON.parse(localStorage.practiceDrawMode) == "finger"; //Draw with finger only if in practice mode and the setting is selected
+var timeLimitSeconds = parseFloat(JSON.parse(localStorage.timerLengthMinutes))*60;
+
+var timerSeconds = timeLimitSeconds;
+
+var currentStroke;
+var lastStrokeX;
+var lastStrokeY;
+var brushColor = DRAW_COLOR;
+
+var activePrompt = "none";
+var isScoring = false;
+
+var strokes = [];
+function PenStroke (xStart, yStart, strokeColor) {
+    this.x = [(xStart-offsetX)/zoom];
+    this.y = [(yStart-offsetY)/zoom];
+    this.brushSize = brushSize/zoom;
+    this.strokeColor = strokeColor;
+    lastStrokeX = xStart;
+    lastStrokeY = yStart;
+}
+function extendCurrentStroke (rawX, rawY) {
+    currentStroke.x.push((rawX-offsetX)/zoom);
+    currentStroke.y.push((rawY-offsetY)/zoom);
+    lastStrokeX = rawX;
+    lastStrokeY = rawY;
+}
+
+var buttons = [];
+var brushPlus = new Button(15+W, 10, 70, 70, () => {brushSize = Math.min(brushSize+BRUSH_DELTA, MAX_BRUSH_SIZE)}, '\uF067', 2, false, false);
+var brushMinus = new Button(15+W, 310, 70, 70, () => {brushSize = Math.max(brushSize-BRUSH_DELTA, MIN_BRUSH_SIZE)}, '\uF068', 3, false, false);
+var pencil = new Button(15+W, H-250, 70, 70, () => {brushColor = DRAW_COLOR}, '\uF040', 0, true, false);
+var eraser = new Button(15+W, pencil.y+70, 70, 70, () => {brushColor = ERASE_COLOR}, '\uF12d', 0, true, false);
+var resetZoom = new Button(15+W, H-80, 70, 70, () => {zoomOut(true)}, '\uF066', 0, false, false);
+
+var startTest = new Button((W+UI_WIDTH)/2-35, H/2-115, 70, 70, () => {activePrompt = "none"; uiRedraw(); lastZoomed = true;}, '\uF0DA', 0, false, true);
+var yesEndTest = new Button((W+UI_WIDTH)/2-85, H/2-115, 70, 70, endTest, '\uF00C', 0, false, true);
+var noEndTest = new Button((W+UI_WIDTH)/2+15, H/2-115, 70, 70, () => {activePrompt = "none"; uiRedraw(); lastZoomed = true;}, '\uF00D', 0, false, true);
+var expiredOk = new Button((W+UI_WIDTH)/2-35, H/2-115, 70, 70, endTest, '\uF061', 0, false, true);
+
+
+//Program Initialization---------------------------------------------------------------------------
+function decrementTimer() {
+    if (activePrompt != "none") { //Dont decrement timer if a prompt is active
+        return;
+    }
+    if (timerSeconds > 0) { //Decrement if >0, otherwise call timerExpiredPrompt
+        timerSeconds--;
+        uiRedraw();
+    } else {
+        timerExpiredPrompt();
+    }
+}
+if (IS_TEST) { //If in test mode activate the start prompt and begin the timer
+    activePrompt = "start";
+    var timerInterval = setInterval(decrementTimer, 1000);
+}
+
+function load () { 
+    if (document.fonts.check('1px FontAwesome')) { //Check if font is loaded
+        uiRedraw(); //Call uiRedraw once fonts are loaded to display everything correctly
+        if (IS_TEST) {
+            beginTestPrompt()
+        }
+    } else {
+        setTimeout(load, 20); //Recursively check every 20ms until font loads
+    }
+}
+uiRedraw(); //Call uiRedraw to start loading the used fonts
+load(); //Begin loading loop
+mainRedraw(); //Draw main content
+
+
+//Drawing the content of the main canvas-----------------------------------------------------------
+function mainRedraw() {
+    //Calculate screen offsets for zooming and panning
+    dynamicGridSize = GRID_SIZE*zoom;
+    let gridDelta = dynamicGridSize - oldGridSize;
+    offsetX -= gridDelta*(zoomX-offsetX)/oldGridSize;
+    offsetY -= gridDelta*(zoomY-offsetY)/oldGridSize;
+    oldGridSize = dynamicGridSize;
+
+    //Limit panning
+    offsetX = clamp(offsetX, -W*0.55*zoom+W, W*0.55*zoom);
+    offsetY = clamp(offsetY, -H*0.55*zoom+H, H*0.55*zoom);
+
+    //Call each canvas' redraw functions
+    gridCtxRedraw();
+    drawCtxRedraw();
+    figureCtxRedraw();
+}    
+
+
+//Drawing Shortcuts--------------------------------------------------------------------------------
+//Easy Circle Drawing
+function circle(x, y, r, fill, ctx) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, TAU, false);
+    if (fill) {
+        ctx.fill();
+    } else {
+        ctx.stroke();
+    }
+}
+//Easy Line Drawing
+function line(x, y, x2, y2, width, ctx) {
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+}
+
+
+//Zoom Handling------------------------------------------------------------------------------------
+//Reset to a centered view at a zoom of 1
+function zoomOut(animate) {
+    offsetX = W/2;
+    offsetY = H/2;
+    zoomX = W/2;
+    zoomY = H/2;
+    zoom = 1;
+    oldGridSize = GRID_SIZE;
+    mainRedraw();
+
+    if (animate) {
+        zoomOutAnimation(0);
+    }
+}
+
+//Bump zoom out then back in
+function zoomOutAnimation(inc) {
+    zoom -= 0.007*Math.sign(10-inc);
+    mainRedraw();
+
+    if (inc < 20) {
+        requestAnimationFrame(() => {zoomOutAnimation(inc+1)});
+    }
+}
+</script>
+</html>

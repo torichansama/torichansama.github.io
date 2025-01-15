@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>DPAA Testing Software</title>
+</head>
+
+<canvas id="canvas" width="0" height="0"></canvas>    
+<style>
+    body {
+        width: 100%;
+        height: 100%;
+        margin: 0px;
+        padding: 0px;
+        overflow: hidden;
+        display: block;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+    }
+    canvas {
+        position: absolute;
+    }
+</style>
+<!-- Colors: FFFFFF, 4F3564, 000000 -->
+<!-- Font Awesome by Dave Gandy - http://fontawesome.io  -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+
+<script src="gen-buttons.js"></script>
+<script src="gen-config.js"></script>
+
+<script>
+//Constant Declarations----------------------------------------------------------------------------
+const VER = "3.0.1";
+
+const W = screen.height;
+const H = screen.width-20;
+
+const YEAR = new Date().getFullYear();
+
+//Canvas Setup and Styling-------------------------------------------------------------------------
+var canvas = document.getElementById('canvas')
+var ctx = canvas.getContext("2d", { willReadFrequently: false, aplha: false });
+
+canvas.width = W;
+canvas.height = H;
+
+ctx.textAlign = "center";
+ctx.textBaseline = "middle";
+
+
+//Variable Declarations----------------------------------------------------------------------------
+var buttons = [];
+var practice = new Button(W/2-160, 290, 320, 70, () => {sessionStorage.isTest = JSON.stringify("false"); location.href = "test.html";}, 'Practice', 0, false, false);
+var test = new Button(W/2-160, 400, 320, 70, () => {location.href = "password-begin.html";}, 'Begin Test', 0, false, false);
+// var info = new Button(W/2-160, 480, 320, 70, () => {}, 'Info', 0, false, false);
+var settings = new Button(W-80, H-80, 70, 70, () => {location.href = "password-settings.html";}, '\uF013', 0, false, false);
+
+
+//Initialize Settings------------------------------------------------------------------------------
+if (localStorage.length < Object.keys(defaultSettings).length) { //Only initialize settings if not already present
+    localStorage.selectedFigure = JSON.stringify(defaultSettings.selectedFigure);
+    localStorage.timerLengthMinutes = JSON.stringify(defaultSettings.timerLengthMinutes);
+    localStorage.displayGrid = JSON.stringify(defaultSettings.displayGrid);
+    localStorage.maxBrushSize = JSON.stringify(defaultSettings.maxBrushSize);
+    localStorage.minBrushSize = JSON.stringify(defaultSettings.minBrushSize);
+    localStorage.defaultBrushPercentage = JSON.stringify(defaultSettings.defaultBrushPercentage);
+    localStorage.practiceDrawMode = JSON.stringify(defaultSettings.practiceDrawMode);
+}
+
+
+//TouchStart Listener------------------------------------------------------------------------------
+document.addEventListener("touchstart", e => {
+    if (e.timeStamp > 500) {
+        buttons.forEach(button => {
+            handleButtonTouch(button, e.touches[0]);
+        });
+    }  
+})
+
+
+//Drawing the content of the main canvas-----------------------------------------------------------
+function redraw() {
+    //Clear the canvas every redraw
+    ctx.clearRect(0, 0, W, H);
+
+    ctx.font = 'normal 500 20px Times New Roman';
+    ctx.fillStyle = "black";
+
+    //Copyright Text
+    ctx.textAlign = "left";
+    ctx.fillText(YEAR + ' McPhail Patents and Research LLC', 35, H-25);
+
+    //Version Number
+    ctx.textAlign = "center";
+    ctx.fillText(VER, 30, 20);
+
+    //Title
+    ctx.font = 'normal 500 65px Times New Roman';
+    ctx.fillText("This Is", W/2, 150);
+    ctx.fillText("A new Title", W/2, 220);
+
+    //Draw icon buttons
+    ctx.lineWidth = 1.5;
+    ctx.fillStyle = "#4F3564";
+    buttons.forEach(button => {
+        drawIconButton(button, ctx);
+    });
+
+    //Copyright Icon
+    ctx.font = '20px FontAwesome';
+    ctx.fillStyle = "black";
+    ctx.fillText('\uF1F9', 20, H-25);
+}    
+redraw(); //Call redraw to start loading the used fonts
+function load () { 
+    if (document.fonts.check('1px FontAwesome')) {
+        redraw(); //Call redraw once fonts are loaded to display everything correctly
+    } else {
+        setTimeout(load, 20); //Recursively check every 20ms until font loads
+    }
+}
+load(); //Begin loading loop
+</script>
+</html>
