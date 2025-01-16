@@ -63,6 +63,7 @@ function drawCtxRedraw() {
 //Drawing the content of the figure canvas---------------------------------------------------------
 function figureCtxRedraw () {
     figureCtx.clearRect(0, 0, W, H);
+    let resolution = THETA_RESOLUTION_LOW_LOD
 
     //Get the theta range of the part of the outline visible on screen
     let minAngle = PI;
@@ -70,6 +71,7 @@ function figureCtxRedraw () {
     if (offsetX > 0 && (offsetX-W)*zoom < 0 && offsetY > 0 && (offsetY-H)*zoom < 0) { //If center of figure is visible set visible angle to -PI->PI
         minAngle = -PI;
         maxAngle = PI;
+        resolution = THETA_RESOLUTION_HIGH_LOD
     } else {
         let cornerAngles = [ //Otherwise find the theta values that point to each corner of the screen
             Math.atan2(-offsetY*zoom, -offsetX*zoom),
@@ -94,7 +96,7 @@ function figureCtxRedraw () {
     let r = SELECTED_FIGURE.calcRad(minAngle)*FIGURE_SCALE;
     figureCtx.lineTo(offsetX+r*Math.cos(minAngle)*zoom, offsetY-r*Math.sin(minAngle)*zoom);
 
-    for (let theta = minAngle; theta <= maxAngle; theta += (maxAngle-minAngle)/THETA_RESOLUTION) {
+    for (let theta = minAngle; theta <= maxAngle; theta += (maxAngle-minAngle)/resolution) {
         r = SELECTED_FIGURE.calcRad(theta)*FIGURE_SCALE;
 
         figureCtx.lineTo(offsetX+r*Math.cos(theta)*zoom, offsetY-r*Math.sin(theta)*zoom);

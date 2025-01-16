@@ -1,19 +1,19 @@
 //Prompt to begin test when ready, shows at start of test
 function beginTestPrompt() {
-    uiCtx.fillStyle = 'rgba(0,0,0,0.3)'; //Gray out background
+    uiCtx.fillStyle = 'rgba(240,240,240,1)'; //Gray out background
     uiCtx.fillRect(0, 0, W+UI_WIDTH, H);
 
     uiCtx.fillStyle = 'white'; //Draw background box
     uiCtx.strokeStyle = 'black';
     uiCtx.lineWidth = 3;
     uiCtx.beginPath();
-    uiCtx.roundRect((W+UI_WIDTH)/2-180, H/2-190, 360, 170, [10]);
+    uiCtx.roundRect((W+UI_WIDTH)/2-180, H/2-85, 360, 170, [10]);
     uiCtx.fill();
     uiCtx.stroke();
 
     uiCtx.font = 'normal 500 30px Times New Roman'; //Draw text
     uiCtx.fillStyle = "black";
-    uiCtx.fillText("Begin Test When Ready", (W+UI_WIDTH)/2, H/2-150);
+    uiCtx.fillText("Begin Test When Ready", (W+UI_WIDTH)/2, H/2-45);
 
     uiCtx.lineWidth = 2; //Draw startTest button
     uiCtx.fillStyle = "Green";

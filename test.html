@@ -45,6 +45,8 @@ const TAU = 2*Math.PI;
 
 const UI_WIDTH = 100;
 
+// const W = window.innerWidth-UI_WIDTH;
+// const H = window.innerHeight;
 const W = screen.height-UI_WIDTH;
 const H = screen.width-20;
 
@@ -52,8 +54,9 @@ const UI_CENTER = W+UI_WIDTH/2;
 
 const GRID_SIZE = W/6;
 const ZOOM_SENS = 0.002;
-const MAX_ZOOM = 500;
-const THETA_RESOLUTION = 400;
+const MAX_ZOOM = 34;
+const THETA_RESOLUTION_HIGH_LOD = 400;
+const THETA_RESOLUTION_LOW_LOD = 201;
 
 const SLIDER_Y1 = 110;
 const SLIDER_Y2 = 280;
@@ -99,6 +102,8 @@ drawCtx.lineCap = "round";
 drawCtx.lineJoin = "round";
 
 figureCtx.strokeStyle = "black";
+figureCtx.lineCap = "round";
+figureCtx.lineJoin = "round";
 
 uiCtx.textAlign = "center";
 uiCtx.textBaseline = "middle";
@@ -157,7 +162,7 @@ var pencil = new Button(15+W, H-250, 70, 70, () => {brushColor = DRAW_COLOR}, '\
 var eraser = new Button(15+W, pencil.y+70, 70, 70, () => {brushColor = ERASE_COLOR}, '\uF12d', 0, true, false);
 var resetZoom = new Button(15+W, H-80, 70, 70, () => {zoomOut(true)}, '\uF066', 0, false, false);
 
-var startTest = new Button((W+UI_WIDTH)/2-35, H/2-115, 70, 70, () => {activePrompt = "none"; uiRedraw(); lastZoomed = true;}, '\uF0DA', 0, false, true);
+var startTest = new Button((W+UI_WIDTH)/2-35, H/2-10, 70, 70, () => {activePrompt = "none"; uiRedraw(); lastZoomed = true;}, '\uF0DA', 0, false, true);
 var yesEndTest = new Button((W+UI_WIDTH)/2-85, H/2-115, 70, 70, endTest, '\uF00C', 0, false, true);
 var noEndTest = new Button((W+UI_WIDTH)/2+15, H/2-115, 70, 70, () => {activePrompt = "none"; uiRedraw(); lastZoomed = true;}, '\uF00D', 0, false, true);
 var expiredOk = new Button((W+UI_WIDTH)/2-35, H/2-115, 70, 70, endTest, '\uF061', 0, false, true);
