@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<style>
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0px;
+    padding: 0px;
+    overflow: hidden;
+    user-select: none;
+    font-family: 'Times New Roman', Times, serif;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    text-align: center;
+}
+#container {
+    display: flex;
+    flex-direction: column; 
+    justify-content: center;    
+    align-items: center;
+    font-size: 2em;
+}
+button {
+    font-family: 'Times New Roman', Times, serif;
+    color: black;
+    outline: 1px solid black;
+    appearance: auto;
+    -webkit-appearance: none;
+}
+#home {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+}
+</style>
+
+
+<body>
+<div id = "container">
+    <h1>Area Filling Accuracy Evaluator</h1>
+    <h2 id="score"></h2>
+</div>
+<button id="home" style='font-size: 2em;' onclick="location.href = 'index.html';">Return Home</button>
+</body>
+
+
+<script>
+    document.getElementById("score").textContent = "Practice Score: " + JSON.parse(sessionStorage.scoreObject);
+    sessionStorage.scoreObject = JSON.stringify(""); //Clears drawing score from session storages
+</script>

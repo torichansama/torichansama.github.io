@@ -1,37 +1,29 @@
+function correctTouches(touches) {
+    let cTouches = []
+    for (let i = 0; i < touches.length; i++) {
+        cTouches.push(new Touch(touches[i].pageX-touchXOffset, touches[i].pageY, touches[i].touchType))
+    }
+    return cTouches;
+}
+
+function Touch(pageX, pageY, touchType) {
+    this.pageX = pageX;
+    this.pageY = pageY;
+    this.touchType = touchType;
+}
+
 //TouchStart Listener------------------------------------------------------------------------------
-document.addEventListener("touchstart", e => {
-    touches = e.touches;
+figureCanvas.addEventListener("touchstart", e => {
+    touches = correctTouches(e.touches);
     touch = touches[0];
     let touchX = touch.pageX; 
     let touchY = touch.pageY;
 
-    if (isScoring) { //Test is being scored
+    if (activePrompt) { //Any Prompt is Active
         return;
     }
-    if (activePrompt == "timerExpired") { //Various prompts and their associated buttons
-        handleButtonTouch(expiredOk, touch);
-        return;
-    } else if (activePrompt == "endEarly") {
-        handleButtonTouch(yesEndTest, touch);
-        handleButtonTouch(noEndTest, touch);
-        return;
-    } else if (activePrompt == "start") {
-        handleButtonTouch(startTest, touch);
-        return;
-    }
-    if (touchX <= 80 && touchY >= H-80) { //Check for EndTest Button in bottom left corner
-        endTestPrompt();
-        return;
-    }
-    if (touchX > W) { //Touch is on UI Bar
-        handleSliderTouch(touch);
-        buttons.forEach(button => {
-            handleButtonTouch(button, touch)
-        });
-        uiRedraw();
-        return;
-    }
-    if (!drawWithFinger) { //Change input modes dependant on the drawWithFinger TODO: Clean up this code (Need access to iOS device)
+
+    if (!DRAW_W_FINGER) { //Change input modes dependant on the drawWithFinger TODO: Clean up this code (Need access to iOS device)
         if (touch.touchType == "stylus") { //Stylus
             currentStroke = new PenStroke(touch.pageX, touch.pageY, brushColor);
             strokes.push(currentStroke);
@@ -41,12 +33,12 @@ document.addEventListener("touchstart", e => {
             if (brushColor == ERASE_COLOR) {
                 drawCtx.globalCompositeOperation = "destination-out";
                 gridCtx.lineWidth = 1.5;
-                circle(touchX, touchY, brushSize, false, gridCtx);
+                circle(touchX, touchY, BRUSH_SIZE, false, gridCtx);
             } else {
                 drawCtx.globalCompositeOperation = "source-over";
             }
 
-            circle(touch.pageX, touch.pageY, brushSize, true, drawCtx);
+            circle(touch.pageX, touch.pageY, BRUSH_SIZE, true, drawCtx);
         } 
         else if (touches.length <= 1) { //Single Finger Pan
             panX = touch.pageX;
@@ -69,12 +61,12 @@ document.addEventListener("touchstart", e => {
             if (brushColor == ERASE_COLOR) {
                 drawCtx.globalCompositeOperation = "destination-out";
                 gridCtx.lineWidth = 1.5;
-                circle(touchX, touchY, brushSize, false, gridCtx);
+                circle(touchX, touchY, BRUSH_SIZE, false, gridCtx);
             } else {
                 drawCtx.globalCompositeOperation = "source-over";
             }
 
-            circle(touchX, touchY, brushSize, true, drawCtx);
+            circle(touchX, touchY, BRUSH_SIZE, true, drawCtx);
         } 
         else if (touches.length >= 2) { //2 Finger Pan/Zoom
             touchType = 2;
@@ -93,32 +85,28 @@ document.addEventListener("touchstart", e => {
 })
 
 //TouchMove Listener-------------------------------------------------------------------------------
-document.addEventListener("touchmove", e => {
-    let touches = e.touches;
+figureCanvas.addEventListener("touchmove", e => {
+    touches = correctTouches(e.touches);
     let touch = touches[0];
     let touchX = touch.pageX; 
     let touchY = touch.pageY;
 
-    if (activePrompt != "none") { //Any Promt is Active
+    if (activePrompt) { //Any Prompt is Active
         return;
     }
-    if (touch.pageX > W) { //Touch is on UI Bar
-        handleSliderTouch(touch);
-        return;
-    }
-    if (drawWithFinger) { //Change input modes dependant on the drawWithFinger TODO: Clean up this code (Need access to iOS device)
+    if (DRAW_W_FINGER) { //Change input modes dependant on the drawWithFinger TODO: Clean up this code (Need access to iOS device)
         if (touches.length <= 1 && currentStroke == undefined) { //Trying to draw but no currentStroke
             return;
         }
         if (touches.length == 1 && currentStroke != undefined && touchType == 1) { //Stylus
             gridCtxRedraw();
             
-            line(lastStrokeX, lastStrokeY, touchX, touchY, brushSize*2, drawCtx);
+            line(lastStrokeX, lastStrokeY, touchX, touchY, BRUSH_SIZE*2, drawCtx);
             extendCurrentStroke(touchX, touchY);
             
             if (brushColor == ERASE_COLOR) {
                 gridCtx.lineWidth = 1.5;
-                circle(touchX, touchY, brushSize, false, gridCtx);
+                circle(touchX, touchY, BRUSH_SIZE, false, gridCtx);
             }
             return;
         }
@@ -151,12 +139,12 @@ document.addEventListener("touchmove", e => {
         if (touch.touchType == "stylus" && currentStroke != undefined) { //Stylus
             gridCtxRedraw();
             
-            line(lastStrokeX, lastStrokeY, touchX, touchY, brushSize*2, drawCtx);
+            line(lastStrokeX, lastStrokeY, touchX, touchY, BRUSH_SIZE*2, drawCtx);
             extendCurrentStroke(touchX, touchY);
             
             if (brushColor == ERASE_COLOR) {
                 gridCtx.lineWidth = 1.5;
-                circle(touchX, touchY, brushSize, false, gridCtx);
+                circle(touchX, touchY, BRUSH_SIZE, false, gridCtx);
             }
             return;
         }
@@ -187,7 +175,19 @@ document.addEventListener("touchmove", e => {
 })
 
 //TouchEnd Listener--------------------------------------------------------------------------------
-document.addEventListener("touchend", e => { //Clear the Eraser Outline
+figureCanvas.addEventListener("touchend", e => { //Clear the Eraser Outline
     gridCtxRedraw();
     touchType = 0;
+});
+
+//Wheel Listener-----------------------------------------------------------------------------------
+figureCanvas.addEventListener("wheel", e => { //TODO: REMOVE
+    if (activePrompt) { //Any Prompt is Active
+        return;
+    }        
+    zoom = clamp(zoom-e.deltaY*ZOOM_SENS*Math.abs(zoom)/2, 1, MAX_ZOOM);
+
+    zoomX = e.pageX;
+    zoomY = e.pageY;
+    mainRedraw();
 });

@@ -1,80 +1,82 @@
 <!DOCTYPE html>
-<html>
-<head>
-<title>DPAA Testing Software</title>
-</head>
+<head><title>DPAA Testing Software</title></head>
 
-<canvas class="canvas" id="gridCanvas" width="0" height="0"></canvas>    
-<canvas id="drawCanvas" width="0" height="0"></canvas>    
-<canvas id="figureCanvas" width="0" height="0"></canvas>    
-<canvas id="uiCanvas" width="0" height="0"></canvas>
-<style>
-    body {
-        width: 100%;
-        height: 100%;
-        margin: 0px;
-        padding: 0px;
-        overflow: hidden;
-        display: block;
-        user-select: none;
-        -webkit-user-select: none;
-        -webkit-touch-callout: none;
-    }
-    canvas {
-        position: absolute;
-    }
-</style>
-
-<!-- Colors: FFFFFF, 4F3564, 000000 -->
 <!-- Font Awesome by Dave Gandy - http://fontawesome.io -->    
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="test_style.css">
+<body>
+<!-- Canvas stack for background grid, drawing, and rendering the figure -->
+<canvas id="gridCanvas"></canvas>    
+<canvas id="drawCanvas"></canvas>    
+<canvas id="figureCanvas"></canvas>
 
-<script src="gen-buttons.js"></script>
-<script src="gen-math.js"></script>
-<script src="gen-figure.js"></script>
+<!-- Timer -->
+<div id="topDiv">
+    <div id="timerDiv">
+        <p id="timer" style="margin-bottom: 0px; margin-top: 7px;"></p>
+    </div>
+    <button id="endEarly" onclick="promptSessionEnd()">End</button>
+</div>
+
+<div id="sideDiv">
+    <!-- Buttons -->
+    <button class="ripple" id="resetZoom" onclick="zoomOut(true)"><i class="fa fa-compress"></i></button>
+
+    <!-- Brush/Eraser Toggle -->
+    <div id="toggleDiv">
+        <button class="toggleButton" id="brush" onclick="setBrush(DRAW_COLOR)"><i class="fa fa-pencil"></i></button>
+        <button class="toggleButton" id="eraser" onclick="setBrush(ERASE_COLOR)"><i class="fa fa-eraser"></i></button>
+    </div>
+</div>
+</body>
+
+<script src="gen-config.js"></script>
+<script src="gen-figures.js"></script>
+<script src="test-end.js"></script>
 <script src="test-prompt.js"></script>
 <script src="test-redraw.js"></script>
-<script src="test-end.js"></script>
 <script src="test-touchListener.js"></script>
-
-
 <script>
 //Constant Declarations----------------------------------------------------------------------------
 const PI = Math.PI;
 const TAU = 2*Math.PI;
 
-const UI_WIDTH = 100;
-
-// const W = window.innerWidth-UI_WIDTH;
-// const H = window.innerHeight;
-const W = screen.height-UI_WIDTH;
-const H = screen.width-20;
-
-const UI_CENTER = W+UI_WIDTH/2;
+const W = COMP_TESTING ? window.innerWidth-90 : screen.height-90;
+const H = COMP_TESTING ? window.innerHeight : screen.width;
 
 const GRID_SIZE = W/6;
+const RENDER_GRID = JSON.parse(localStorage.displayGrid) == "true";
+
 const ZOOM_SENS = 0.002;
 const MAX_ZOOM = 34;
-const THETA_RESOLUTION_HIGH_LOD = 400;
-const THETA_RESOLUTION_LOW_LOD = 201;
 
-const SLIDER_Y1 = 110;
-const SLIDER_Y2 = 280;
-const UI_BRUSH_RAD = 18;
-const MAX_BRUSH_SIZE = parseInt(JSON.parse(localStorage.maxBrushSize))/768*H; //5 pixels on 1024x768
-const MIN_BRUSH_SIZE = parseInt(JSON.parse(localStorage.minBrushSize))/768*H;
-const BRUSH_DELTA = (MAX_BRUSH_SIZE-MIN_BRUSH_SIZE)/6;
-
-const DRAW_COLOR = "#4F3564";
-const ERASE_COLOR = "#FFFFFF";
-
-const RENDER_GRID = JSON.parse(localStorage.displayGrid) == "true";
 const SELECTED_FIGURE = figures[parseInt(JSON.parse(localStorage.selectedFigure))];
+const THETA_RESOLUTION_HIGH_LOD = 305;
+const THETA_RESOLUTION_LOW_LOD = 200;
+
 const IS_TEST = JSON.parse(sessionStorage.isTest) == "true";
+const ENABLE_TIMER = IS_TEST || JSON.parse(localStorage.practiceTimer) == "true";
+const ENABLE_SCORING = IS_TEST || JSON.parse(localStorage.practiceScore) == "true";
+
+const TEST_TIME_LIMIT_SEC = parseFloat(JSON.parse(localStorage.timerLengthMinutes))*60;
+const PRACTICE_TIME_LIMIT_SEC = parseFloat(JSON.parse(localStorage.practiceTimerLengthMinutes))*60;
+const TIME_FORMAT = new Intl.NumberFormat('en-US', { 
+    minimumIntegerDigits: 2 //Guaruntees leading and trailing 0's, ex. 05:01 instead of 5:1
+});
+
+const DRAW_W_FINGER = !IS_TEST && JSON.parse(localStorage.practiceDrawMode) == "finger"; //Draw with finger only if in practice mode and the setting is selected
+const ERASE_COLOR = "#FFFFFF";
+const DRAW_COLOR = IS_TEST ? "#FFE500" : "#808080"; //Test Color : Practice Color
 
 //DO NOT CHANGE - STANDARDIZES TEST RESULTS
-const FIGURE_SCALE = 0.8*H;
+const AVG_Y = (SELECTED_FIGURE.minY+SELECTED_FIGURE.maxY)/2;
+const Y_SCALE = (H/2-60)/(SELECTED_FIGURE.maxY-AVG_Y);
+const X_SCALE = (W/2-100)/(SELECTED_FIGURE.width/2);
+const SCALE = Math.min(X_SCALE, Y_SCALE);
+
 const SCORE_AREA_SIZE = 4000; //CANNOT EXCEED 4096px by 4096px DUE TO iOS/SAFARI LIMITATIONS
+
+const BRUSH_SIZE = parseInt(JSON.parse(localStorage.brushSize))/768*SCALE;
 
 
 //Canvas Setup and Styling-------------------------------------------------------------------------
@@ -87,14 +89,10 @@ var drawCtx = drawCanvas.getContext("2d", { willReadFrequently: false, aplha: fa
 var figureCanvas = document.getElementById('figureCanvas')
 var figureCtx = figureCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
 
-var uiCanvas = document.getElementById('uiCanvas')
-var uiCtx = uiCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
-
-gridCanvas.width = W; gridCanvas.height = H;
-drawCanvas.width = W; drawCanvas.height = H;
-figureCanvas.width = W; figureCanvas.height = H;
-
-uiCanvas.width = W+UI_WIDTH; uiCanvas.height = H;
+var canvasCol = document.getElementsByTagName("canvas");
+for (let i = 0; i < canvasCol.length; i++) {
+    canvasCol[i].width = W; canvasCol[i].height = H;
+}
 
 gridCtx.strokeStyle = "black";
 
@@ -102,19 +100,16 @@ drawCtx.lineCap = "round";
 drawCtx.lineJoin = "round";
 
 figureCtx.strokeStyle = "black";
-figureCtx.lineCap = "round";
-figureCtx.lineJoin = "round";
-
-uiCtx.textAlign = "center";
-uiCtx.textBaseline = "middle";
-uiCtx.lineCap = "round";
+figureCtx.lineCap = "butt";
+figureCtx.lineJoin = "butt";
+figureCtx.lineWidth = 1.9;
 
 
 //Variable Declarations----------------------------------------------------------------------------
 var oldGridSize = GRID_SIZE;
 
 var offsetX = W/2;
-var offsetY = H/2;
+var offsetY = H/2+50;
 var zoomX = 0;
 var zoomY = 0;
 var zoom = 1;
@@ -124,26 +119,24 @@ var zoomGestureDist;
 var panX;
 var panY;
 var dynamicGridSize;
+var touchXOffset = 0;
 
-var brushSize = lerp(MIN_BRUSH_SIZE, MAX_BRUSH_SIZE, parseFloat(JSON.parse(localStorage.defaultBrushPercentage))/100);
-var drawWithFinger = !IS_TEST && JSON.parse(localStorage.practiceDrawMode) == "finger"; //Draw with finger only if in practice mode and the setting is selected
-var timeLimitSeconds = parseFloat(JSON.parse(localStorage.timerLengthMinutes))*60;
-
-var timerSeconds = timeLimitSeconds;
+var timerSeconds = IS_TEST ? TEST_TIME_LIMIT_SEC : PRACTICE_TIME_LIMIT_SEC;
 
 var currentStroke;
 var lastStrokeX;
 var lastStrokeY;
-var brushColor = DRAW_COLOR;
+var brushColor;
 
-var activePrompt = "none";
-var isScoring = false;
+var activePrompt = null;
+
+var rightHanded = true;
 
 var strokes = [];
 function PenStroke (xStart, yStart, strokeColor) {
     this.x = [(xStart-offsetX)/zoom];
     this.y = [(yStart-offsetY)/zoom];
-    this.brushSize = brushSize/zoom;
+    this.brushSize = BRUSH_SIZE/zoom;
     this.strokeColor = strokeColor;
     lastStrokeX = xStart;
     lastStrokeY = yStart;
@@ -155,49 +148,43 @@ function extendCurrentStroke (rawX, rawY) {
     lastStrokeY = rawY;
 }
 
-var buttons = [];
-var brushPlus = new Button(15+W, 10, 70, 70, () => {brushSize = Math.min(brushSize+BRUSH_DELTA, MAX_BRUSH_SIZE)}, '\uF067', 2, false, false);
-var brushMinus = new Button(15+W, 310, 70, 70, () => {brushSize = Math.max(brushSize-BRUSH_DELTA, MIN_BRUSH_SIZE)}, '\uF068', 3, false, false);
-var pencil = new Button(15+W, H-250, 70, 70, () => {brushColor = DRAW_COLOR}, '\uF040', 0, true, false);
-var eraser = new Button(15+W, pencil.y+70, 70, 70, () => {brushColor = ERASE_COLOR}, '\uF12d', 0, true, false);
-var resetZoom = new Button(15+W, H-80, 70, 70, () => {zoomOut(true)}, '\uF066', 0, false, false);
 
-var startTest = new Button((W+UI_WIDTH)/2-35, H/2-10, 70, 70, () => {activePrompt = "none"; uiRedraw(); lastZoomed = true;}, '\uF0DA', 0, false, true);
-var yesEndTest = new Button((W+UI_WIDTH)/2-85, H/2-115, 70, 70, endTest, '\uF00C', 0, false, true);
-var noEndTest = new Button((W+UI_WIDTH)/2+15, H/2-115, 70, 70, () => {activePrompt = "none"; uiRedraw(); lastZoomed = true;}, '\uF00D', 0, false, true);
-var expiredOk = new Button((W+UI_WIDTH)/2-35, H/2-115, 70, 70, endTest, '\uF061', 0, false, true);
-
+//Define all prompts (modals)----------------------------------------------------------------------
+// Prompts must be called with activatePrompt(prompt_to_activate)
+// To clear the active prompt, call clearPrompt()
+var beginTest = new Prompt("Press play to begin test.<br></br>Timer countdown will begin immediately.", "rgba(240,240,240,1)", [
+    new PromptButton("fa fa-caret-right", "green", cancelPrompt)
+]);
+var endTestEarly = new Prompt("End Test Before Timer Ends?", "rgba(0,0,0,0.3)", [
+    new PromptButton("fa fa-check", "green", endTest),
+    new PromptButton("fa fa-times", "#6b0000", cancelPrompt)
+]);
+var endPracticeEarly = new Prompt("End Practice Session?", "rgba(0,0,0,0.3)", [
+    new PromptButton("fa fa-check", "green", endTest),
+    new PromptButton("fa fa-times", "#6b0000", cancelPrompt)
+]);
+var timerExpired = new Prompt("Timer Expired.", "rgba(0,0,0,0.3)", [
+    new PromptButton("fa fa-arrow-right", "green", endTest),
+]);
+var loading = new Prompt("", "rgba(240,240,240,1)", []);
+var handedness = new Prompt("Select your dominant hand:", "rgba(240,240,240,1)", [
+    new PromptButton("L", "black", ()=>{setHandedness("left")}),
+    new PromptButton("R", "black", ()=>{setHandedness("right")})
+]);
 
 //Program Initialization---------------------------------------------------------------------------
-function decrementTimer() {
-    if (activePrompt != "none") { //Dont decrement timer if a prompt is active
-        return;
-    }
-    if (timerSeconds > 0) { //Decrement if >0, otherwise call timerExpiredPrompt
-        timerSeconds--;
-        uiRedraw();
-    } else {
-        timerExpiredPrompt();
-    }
-}
-if (IS_TEST) { //If in test mode activate the start prompt and begin the timer
-    activePrompt = "start";
-    var timerInterval = setInterval(decrementTimer, 1000);
-}
+sessionStorage.isTest = JSON.stringify("false"); //Clear any previously set isTest flag 
 
-function load () { 
-    if (document.fonts.check('1px FontAwesome')) { //Check if font is loaded
-        uiRedraw(); //Call uiRedraw once fonts are loaded to display everything correctly
-        if (IS_TEST) {
-            beginTestPrompt()
-        }
-    } else {
-        setTimeout(load, 20); //Recursively check every 20ms until font loads
-    }
-}
-uiRedraw(); //Call uiRedraw to start loading the used fonts
-load(); //Begin loading loop
 mainRedraw(); //Draw main content
+
+// if (IS_TEST) {
+    activatePrompt(handedness);
+// }
+if (ENABLE_TIMER) {
+    document.getElementById("timerDiv").style.display = "block"; //Display timer
+    updateTimer(); //Display initialized time
+    setInterval(decrementTimer, 1000); //Decrement timer every 1000ms (1 sec)
+}
 
 
 //Drawing the content of the main canvas-----------------------------------------------------------
@@ -210,14 +197,54 @@ function mainRedraw() {
     oldGridSize = dynamicGridSize;
 
     //Limit panning
-    offsetX = clamp(offsetX, -W*0.55*zoom+W, W*0.55*zoom);
-    offsetY = clamp(offsetY, -H*0.55*zoom+H, H*0.55*zoom);
+    offsetX = clamp(offsetX, W-W*0.55*zoom, W*0.55*zoom);
+    offsetY = clamp(offsetY, H-H*0.55*zoom, H*0.55*zoom);
 
     //Call each canvas' redraw functions
     gridCtxRedraw();
     drawCtxRedraw();
     figureCtxRedraw();
 }    
+
+
+//Toggle button between brush and eraser-----------------------------------------------------------
+function setBrush(color) {
+    brushColor = color;
+
+    let active = document.getElementById("brush");
+    let inactive = document.getElementById("eraser");
+    if (color == ERASE_COLOR) {
+        active = document.getElementById("eraser");
+        inactive = document.getElementById("brush");
+    }
+
+    active.style.outline = "4px outset black";
+    inactive.style.backgroundColor = "#FFFFFF";
+
+    inactive.style.outline = "2px solid black";
+    active.style.backgroundColor = "#f0f0f0";
+}
+setBrush(DRAW_COLOR); //Initialize to brush instead of eraser
+
+
+//Set handedness of user---------------------------------------------------------------------------
+function setHandedness(hand) {
+    let sideDiv = document.getElementById("sideDiv");
+
+    if (hand == "left") {
+        sideDiv.style.left = "0px";
+        sideDiv.style.right = "auto";
+
+        document.getElementById("topDiv").style.left = "90px";
+        for (let i = 0; i < canvasCol.length; i++) {
+            canvasCol[i].style.left = "90px";
+        }
+
+        touchXOffset = 90;
+    }
+
+    activatePrompt(beginTest);
+}
 
 
 //Drawing Shortcuts--------------------------------------------------------------------------------
@@ -240,31 +267,60 @@ function line(x, y, x2, y2, width, ctx) {
     ctx.stroke();
 }
 
+//Math Utils---------------------------------------------------------------------------------------
+//Clamp number between minimum and maximum values
+function clamp(x, min, max) {
+    return Math.max(Math.min(x, max), min);
+}
+
+//Given value from 0-1 (alpha) interpolate between a and b
+function lerp(a, b, alpha) {
+    return a + clamp(alpha, 0, 1)*(b-a);
+}
+
+
+//Timer Handling-----------------------------------------------------------------------------------
+function updateTimer() {
+    let mins = TIME_FORMAT.format(""+Math.floor(timerSeconds/60));
+    let secs = TIME_FORMAT.format(""+timerSeconds%60);
+
+    document.getElementById("timer").textContent = mins+":"+secs; //Set the timer HTML element
+}
+function decrementTimer() {
+    if (activePrompt) { //Dont decrement timer if a prompt is active
+        return;
+    }
+    if (timerSeconds > 0) { //Decrement if >0, otherwise call timerExpiredPrompt
+        timerSeconds--;
+        updateTimer();
+    } else {
+        activatePrompt(timerExpired);
+    }
+}
+
 
 //Zoom Handling------------------------------------------------------------------------------------
 //Reset to a centered view at a zoom of 1
 function zoomOut(animate) {
     offsetX = W/2;
-    offsetY = H/2;
-    zoomX = W/2;
-    zoomY = H/2;
+    offsetY = H/2+50;
+    zoomX = offsetX;
+    zoomY = offsetY;
     zoom = 1;
     oldGridSize = GRID_SIZE;
     mainRedraw();
 
-    if (animate) {
-        zoomOutAnimation(0);
-    }
+    if (animate) zoomOutAnimation(0);
 }
 
 //Bump zoom out then back in
 function zoomOutAnimation(inc) {
     zoom -= 0.007*Math.sign(10-inc);
+    zoomX = offsetX;
+    zoomY = H/2-offsetY;
     mainRedraw();
 
-    if (inc < 20) {
-        requestAnimationFrame(() => {zoomOutAnimation(inc+1)});
-    }
+    if (inc < 20) requestAnimationFrame(() => {zoomOutAnimation(inc+1)});
 }
 </script>
 </html>

@@ -1,28 +1,56 @@
+function promptSessionEnd() {
+    if (IS_TEST) {
+        activatePrompt(endTestEarly);
+    } else {
+        activatePrompt(endPracticeEarly);
+    }
+}
+
 function endTest() {
-    isScoring = true; //Set isScoring
-    clearInterval(timerInterval);
     zoomOut(false)
 
-    uiCtx.fillStyle = "white";
-    uiCtx.fillRect(0, 0, W+UI_WIDTH, H);
-    uiCtx.fillStyle = "black";
-    uiCtx.font = 'normal 500 60px Times New Roman';
-    uiCtx.fillText("Loading...", (W+UI_WIDTH)/2, H/2-30);   
+    if (!SCORE_DEBUG) activatePrompt(loading);
 
-    if (IS_TEST) {
+    if (ENABLE_SCORING) {
         setTimeout(scoreFigure, 40);
     } else {
         location.href = "index.html";
-        return;
     }
 }
 
 function scoreFigure() {
     drawCanvas.width = SCORE_AREA_SIZE; 
     drawCanvas.height = SCORE_AREA_SIZE;
-    let drawToScoreScale = SCORE_AREA_SIZE/FIGURE_SCALE*0.5; //Sets size of outline relative to the score area
+    let yScale = (SCORE_AREA_SIZE/2-500)/(SELECTED_FIGURE.maxY-AVG_Y);
+    let xScale = (SCORE_AREA_SIZE/2-500)/(SELECTED_FIGURE.width/2);
+    let figureScale = Math.min(xScale, yScale); //Scale of figure in scoring mode
+    let drawToScoreScale = figureScale/SCALE; //Realtive size of scoring figure compared to drawing figure
 
-    drawCanvas.style.display = "none";
+    let minAngle = SELECTED_FIGURE.minTheta;
+    let maxAngle = SELECTED_FIGURE.maxTheta;
+
+    if (!SCORE_DEBUG) {drawCanvas.style.display = "none";}
+    else {
+        drawCtx.strokeStyle = "black";
+        
+        let thetaInc = (maxAngle-minAngle)/THETA_RESOLUTION_HIGH_LOD;
+
+        let innerPath = new Path2D();
+        let outerPath = new Path2D();
+
+        let rads = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
+        innerPath.moveTo(rads.innerX, rads.innerY);
+        outerPath.moveTo(rads.outerX, rads.outerY);
+
+        for (let theta = minAngle+thetaInc; theta <= maxAngle+0.01; theta += thetaInc) {
+            let rads = getCoordsFromFigure(theta, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
+            innerPath.lineTo(rads.innerX, rads.innerY);
+            outerPath.lineTo(rads.outerX, rads.outerY);
+        }
+
+        drawCtx.stroke(innerPath);
+        drawCtx.stroke(outerPath);
+    }
 
     //Drawing strokes using one continuous line
     drawCtx.strokeStyle = "red";
@@ -44,25 +72,59 @@ function scoreFigure() {
         drawCtx.stroke();
     });
 
+    //Score strokes against figure 
     let scoreInc = 0;
     imgData = drawCtx.getImageData(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE);
     for (let i = 0; i < imgData.data.length; i += 4) {
-        if (imgData.data[i] != 0) {
-            let x = (i / 4) % SCORE_AREA_SIZE - SCORE_AREA_SIZE/2;
-            let y = Math.floor((i / 4) / SCORE_AREA_SIZE) - SCORE_AREA_SIZE/2;
-            let theta = -Math.atan2(y, x);
-            let r = Math.hypot(x, y);
-            let figureR = SELECTED_FIGURE.calcRad(theta)*FIGURE_SCALE*drawToScoreScale;
-            if (r <= figureR) {
-                scoreInc++;
-            } else {
-                scoreInc--;
-            }
+        if (imgData.data[i] == 0 && !FIND_MAX_SCORE) { //Skip blank pixels
+            continue;
+        }
+        let x = (i / 4) % SCORE_AREA_SIZE - SCORE_AREA_SIZE/2;
+        let y = Math.floor((i / 4) / SCORE_AREA_SIZE) - SCORE_AREA_SIZE/2 - AVG_Y*figureScale;
+        let theta = -Math.atan2(y, x);
+        let pixelR = Math.hypot(x, y);
+        let figureCoords = getCoordsFromFigure(theta, figureScale, 0, -AVG_Y*figureScale);
+        let innerR = Math.hypot(figureCoords.innerX, -figureCoords.innerY)
+        let outerR = Math.hypot(figureCoords.outerX, -figureCoords.outerY)
+
+        if (pixelR >= innerR && pixelR <= outerR) {
+            imgData.data[i+1] = 255;
+            imgData.data[i+3] = 255;
+            scoreInc++;
+        } else if (!FIND_MAX_SCORE){
+            imgData.data[i+2] = 255;
+            imgData.data[i+3] = 255;
+            scoreInc--;
+        }
+        if (pixelR < 30 && SCORE_DEBUG) { //Show 0,0
+            imgData.data[i+2] = 255;
+            imgData.data[i+3] = 255;
         }
     }
+    drawCtx.putImageData(imgData, 0, 0);
 
-    let scoreStr = Math.round(scoreInc/SELECTED_FIGURE.maxScore*100*10000)/10000
-    sessionStorage.scoreObject = JSON.stringify(scoreStr+"%"); //Stores drawing score in the session storages
+    if (FIND_MAX_SCORE) { //Alert the max score
+        alert(scoreInc);
+    }
+    
+    //Publish score to sessionStorage
+    let score = Math.round(scoreInc/SELECTED_FIGURE.maxScore*100*10000)/10000 //Round to 4 decimal places
+    if (score < 0) {
+        score = "NEGATIVE VALUE";
+    } else {
+        let scoreFormat = new Intl.NumberFormat('en-US', { 
+            minimumIntegerDigits: 1, 
+            minimumFractionDigits: 4 //Guaruntees 4 decimal places
+        });
+        score = scoreFormat.format(score)+"%";
+    }
+    sessionStorage.scoreObject = JSON.stringify(score); //Stores drawing score in the session storages
 
-    location.href = "password-end.html";
+    if (SCORE_DEBUG) return;
+
+    if (IS_TEST) {
+        location.href = "testEnd_auth.html";
+    } else {
+        location.href = "testPracticeEnd.html";
+    }
 }

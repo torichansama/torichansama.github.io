@@ -1,175 +1,259 @@
 <!DOCTYPE html>
 <style>
-    body {
-        width: 100%;
-        height: 100%;
-        margin: 0px;
-        padding: 0px;
-        overflow: hidden;
-        user-select: none;
-        font-family: 'Times New Roman', Times, serif;
-        -webkit-user-select: none;
-        -webkit-touch-callout: none;
-        text-align: left;
-    }
-    #container {
-        display: flex;
-        margin-left: 20px;
-        flex-direction: column; 
-        justify-content: center;    
-        font-size: 2em;
-    }
-    #inputField {
-        display: inline-block;
-        margin-bottom: 15px;
-    }
-    p {
-        margin: 0px;
-        padding: 0px;
-        color: red;
-        display: none;
-    }
-    select {
-        font-family: 'Times New Roman', Times, serif;
-    }
-    button {
-        font-family: 'Times New Roman', Times, serif;
-    }
-    #home {
-        color: black;
-        outline: 1px solid black;
-        appearance: auto;
-        -webkit-appearance: none;
-        position: absolute;
-        right: 10px;
-        bottom: 10px;
-    }
+.navbar {
+    height: 100%;
+    width: 160px;
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    background-color: #111;
+    overflow-x: hidden;
+    padding-top: 20px;
+}
+.navbar a {
+    padding: 6px 8px 6px 16px;
+    text-decoration: none;
+    margin-top: 15px;
+    font-size: 30px;
+    color: #acacac;
+    display: block;
+}
+.navbar a:hover {
+    color: #f1f1f1;
+}
+.page {
+    display: flex;
+    margin-top: 20px;
+    flex-direction: column; 
+    justify-content: center;    
+    font-size: 2em;    
+    margin-left: 160px; /* Same as the width of the sidenav */
+    padding: 0px 20px;
+}
+.inputField {
+    display: inline-block;
+    margin-bottom: 15px;
+}
+.inputField a {
+    margin: 0px;
+    padding: 0px;
+    color: red;
+    display: none;
+}
+.break {
+    margin: 15px;
+}
+
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0px;
+    padding: 0px;
+    overflow: hidden;
+    user-select: none;
+    font-family: 'Times New Roman', Times, serif;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+select {
+    font-family: 'Times New Roman', Times, serif;
+}
+button {
+    font-family: 'Times New Roman', Times, serif;
+}
+p {
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+#home {
+    color: black;
+    outline: 1px solid black;
+    appearance: auto;
+    -webkit-appearance: none;
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+}
+#status {
+    margin-top: 35px;
+}
 </style>
 
+
 <body>
-    <div id = "container">
-        <h2>Settings</h2>
-        <div id = "inputField">
-            <label for="figure">Select Figure:</label> <!-- ALSO ADD FIGURE IN defaultSettings -->
-            <select name="figure" id="figure" style='font-size: 1em;'>
-                <option value="0">Figure 1</option>
-                <option value="1">Figure 2</option> 
-            </select>
-        </div>
-        <div id = "inputField">
-            <label for="timerLength">Timer Length (Minutes):</label>
-            <input id="timerLength" type="number" autocomplete="off" style='font-size: 1em; max-width: 200px;'/>
-            <p id = "timerLengthError">*</p>
-        </div>
-        <div id = "inputField">
-            <label for="grid">Grid Lines:</label>
-            <select name="grid" id="grid" style='font-size: 1em;'>
-                <option value="true">On</option>
-                <option value="false">Off</option>
-            </select>
-        </div>
-        <div id = "inputField">
-            <label for="maxBrush">Max Brush Size (px):</label>
-            <input id="maxBrush" type="number" autocomplete="off" style='font-size: 1em; max-width: 200px;'/>
-            <p id = "maxBrushError">*</p>
-        </div>
-        <div id = "inputField">
-            <label for="minBrush">Min Brush Size (px):</label>
-            <input id="minBrush" type="number" autocomplete="off" style='font-size: 1em; max-width: 200px;'/>
-            <p id = "minBrushError">*</p>
-        </div>
-        <div id = "inputField">
-            <label for="defaultBrush">Default Brush Size (0-100%):</label>
-            <input id="defaultBrush" type="number" autocomplete="off" style='font-size: 1em; max-width: 200px;'/>
-            <p id = "defaultBrushError">*</p>
-        </div>
-        <div id = "inputField">
-            <label for="drawMode">Draw Mode for Practice:</label>
-            <select name="drawMode" id="drawMode" style='font-size: 1em;'>
-                <option value="finger">Finger</option>
-                <option value="stylus">Stylus</option> 
-            </select>
-        </div>
-        <button id="changePassword" style='font-size: 1em; width: fit-content; color: darkred' onclick="">Change Password</button>
+<!-- Setup the navbar on the side with all the settings pages -->
+<div class="navbar">
+    <a id="mainNav" onclick="changePage('main');" style="background-color: #383838;">General</a>
+    <a id="practiceNav" onclick="changePage('practice');">Practice</a>
+    <a id="pwChangeNav" onclick="changePage('pwChange');">Password</a>
+</div>
+
+<!-- The main settings page the user lands on -->
+<div class="page" id="main">
+    <div class="break"></div>
+    <div class="inputField">
+        <label for="selectedFigure">Selected Figure:</label>
+        <select id="selectedFigure" style='font-size: 1em;'></select> <!-- Figures are added automatically -->
     </div>
-    <button id="home" style='font-size: 2em;'>Save and Exit</button>
+    <div class="inputField">
+        <label for="displayGrid">Grid Lines:</label>
+        <select id="displayGrid" style='font-size: 1em;'>
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </select>
+    </div>
+    <div class="inputField">
+        <label for="brushSize">Brush Size (px):</label>
+        <input id="brushSize" type="number" autocomplete="off" style='font-size: 1em; max-width: 100px;'/>
+        <a id="brushSizeError">*</a>
+    </div>
+    <div class="break"></div>
+    <div class="inputField">
+        <label for="timerLengthMinutes">Test Length (Minutes):</label>
+        <input id="timerLengthMinutes" type="number" autocomplete="off" style='font-size: 1em; max-width: 100px;'/>
+        <a id="timerLengthMinutesError">*</a>
+    </div>
+    <div class="break"></div>
+    <div class="inputField">
+        <label for="infoButton">Info Page:</label>
+        <select id="infoButton" style='font-size: 1em;'>
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </select>
+    </div>
+</div>
+
+<!-- Settings relevant to practice mode -->
+<div class="page" id="practice" style="display: none;">
+    <div class="break"></div>
+    <div class="inputField">
+        <label for="practiceDrawMode">Draw Mode for Practice:</label>
+        <select id="practiceDrawMode" style='font-size: 1em;'>
+            <option value="finger">Finger</option>
+            <option value="stylus">Stylus</option> 
+        </select>
+    </div>
+    <div class="inputField">
+        <label for="practiceScore">Practice Scoring:</label>
+        <select id="practiceScore" style='font-size: 1em;'>
+            <option value="false">Disabled</option> 
+            <option value="true">Enabled</option>
+        </select>
+    </div>
+    <div class="break"></div>
+    <div class="inputField">
+        <label for="practiceTimer">Practice Timer:</label>
+        <select id="practiceTimer" style='font-size: 1em;'>
+            <option value="false">Disabled</option> 
+            <option value="true">Enabled</option>
+        </select>
+    </div>
+    <div class="inputField">
+        <label for="practiceTimerLengthMinutes" id="practiceLengthMinutesLabel">Practice Length (Minutes):</label>
+        <input id="practiceTimerLengthMinutes" type="number" autocomplete="off" style='font-size: 1em; max-width: 100px;'/>
+        <a id="practiceTimerLengthMinutesError">*</a>
+    </div>
+</div>
+
+<!-- Page to change the prcotor password -->
+<div class="page" id="pwChange" style="display: none;">
+    <div class="break"></div>
+    <p>Please enter the admin password to set a new proctor password.</p>
+    <div class="break"></div>
+    <div class="break"></div>
+    <div class="inputField">
+        <label for="adminPassword">Admin Password:</label>
+        <input id="adminPassword" type="password" required autocomplete="off" style='font-size: 1em;'/>
+    </div>
+    <div class="inputField">
+        <label for="proctorPassword">New Proctor Password:</label>
+        <input id="proctorPassword" type="text" required autocomplete="off" style='font-size: 1em;'/>
+    </div>
+    <button id="submit" style='font-size: 1em; width: fit-content;' onclick="changePassword()">Change Password</button>
+    <h6 id="status" style="display: none;">Proctor Password Set</h6>
+</div>
+
+<button id="home" style='font-size: 2em;' onclick="saveAndExit()">Save and Exit</button>
 </body>
 
-<script src="gen-math.js"></script>
 
+<script src="gen-config.js"></script>
+<script src="gen-figures.js"></script>
+<script src="gen-authenticate.js"></script>
 <script>
-    //On initialization set all settings to their previously saved values
-    document.getElementById("figure").value = JSON.parse(localStorage.selectedFigure);
-    document.getElementById("timerLength").value = JSON.parse(localStorage.timerLengthMinutes);
-    document.getElementById("grid").value = JSON.parse(localStorage.displayGrid);
-    document.getElementById("maxBrush").value = JSON.parse(localStorage.maxBrushSize);
-    document.getElementById("minBrush").value = JSON.parse(localStorage.minBrushSize);
-    document.getElementById("defaultBrush").value = JSON.parse(localStorage.defaultBrushPercentage);
-    document.getElementById("drawMode").value = JSON.parse(localStorage.practiceDrawMode);
 
-    //Save settings when navigating off the page
-    document.getElementById("home").onclick = () => {
-        saveSettings("index.html");
-    };
-    document.getElementById("changePassword").onclick = () => {
-        saveSettings("password-change.html");
-    };
+for (let i = 0; i < figures.length; i++){
+    var opt = document.createElement('option');
+    opt.value = i;
+    opt.innerHTML = figures[i].displayName;
+    document.getElementById('selectedFigure').appendChild(opt);
+}
 
-    function saveSettings(destination) {
-        //Get current setting values
-        let selectedFigure = document.getElementById("figure").value;
-        let timerLengthMinutes = document.getElementById("timerLength").value;
-        let displayGrid = document.getElementById("grid").value;
-        let maxBrushSize = document.getElementById("maxBrush").value;
-        let minBrushSize = document.getElementById("minBrush").value;
-        let defaultBrushPercentage = document.getElementById("defaultBrush").value;
-        let practiceDrawMode = document.getElementById("drawMode").value;
+//On initialization set all settings to their previously saved values
+for (const [key, value] of Object.entries(defaultSettings)) {
+    document.getElementById(key).value = JSON.parse(localStorage[key]);
+};
 
-        let error = false;
+function changePage(destination) {
+    if (!checkValidEntries()) { //Check for any invalid entries
+        return;
+    }
 
-        //Verify all settings have valid inputs
-        if (!isNumeric(timerLengthMinutes)) {
-            document.getElementById("timerLength").value = "";
-            document.getElementById("timerLengthError").style.display = "inline-block";
-            error = true;
-        } else {
-            document.getElementById("timerLengthError").style.display = "none";
-        }
-
-        if (!isNumeric(maxBrushSize)) {
-            document.getElementById("maxBrush").value = "";
-            document.getElementById("maxBrushError").style.display = "inline-block";
-            error = true;
-        } else {
-            document.getElementById("maxBrushError").style.display = "none";
-        }
-        
-        if (!isNumeric(minBrushSize)) {
-            document.getElementById("minBrush").value = "";
-            document.getElementById("minBrushError").style.display = "inline-block";
-            error = true;
-        } else {
-            document.getElementById("minBrushError").style.display = "none";
-        }
-
-        if (!isNumeric(defaultBrushPercentage) || parseInt(defaultBrushPercentage) > 100) {
-            document.getElementById("defaultBrush").value = "";
-            document.getElementById("defaultBrushError").style.display = "inline-block";
-            error = true;
-        } else {
-            document.getElementById("defaultBrushError").style.display = "none";
-        }
-
-        if (!error) { //Save settings if no error is thrown
-            localStorage.selectedFigure = JSON.stringify(selectedFigure);
-            localStorage.timerLengthMinutes = JSON.stringify(timerLengthMinutes);
-            localStorage.displayGrid = JSON.stringify(displayGrid);
-            localStorage.maxBrushSize = JSON.stringify(maxBrushSize);
-            localStorage.minBrushSize = JSON.stringify(minBrushSize);
-            localStorage.defaultBrushPercentage = JSON.stringify(defaultBrushPercentage);
-            localStorage.practiceDrawMode = JSON.stringify(practiceDrawMode);
-
-            location.href = destination;
+    pages = document.getElementsByClassName("page"); //array of all settings pages
+    for (let i = 0; i < pages.length; i++) {
+        let page = pages[i];
+        if (page.id == destination) { //Show the destination page and highlight that sidebar
+            page.style.display = "flex";
+            document.getElementById(page.id+"Nav").style.backgroundColor = "#383838";
+        } else { //Hide the non-destination pages and un-highlight those sidebars
+            page.style.display = "none";
+            document.getElementById(page.id+"Nav").style.backgroundColor = "#00000000";
         }
     }
+}
+
+function saveAndExit() {    
+    if (checkValidEntries()) { //Save settings if no error is thrown
+        for (const [key, value] of Object.entries(defaultSettings)) {
+            localStorage[key] = JSON.stringify(document.getElementById(key).value);
+        };
+
+        location.href = "index.html"; //Return to the homepage
+    }
+}
+
+function checkValidEntries() {
+    let errorFlag = false;
+    for (const [key, value] of Object.entries(defaultSettings)) {
+        element = document.getElementById(key);
+
+        if (element.type != "number") continue; //Only number fields allow for bad inputs
+
+        //Check if a number field contains a valid number (percentage inputs must be <= 100)
+        if (!isNumeric(element.value) || (element.id.includes("Percentage") && parseInt(element.value) > 100) || element.value == "") {
+            document.getElementById(element.id + "Error").style.display = "inline-block";
+            element.value = "";
+            errorFlag = true;
+        } else {
+            document.getElementById(element.id + "Error").style.display = "none";
+        }
+    }
+    return !errorFlag; //Return true if all entries are valid
+}
+
+function changePassword() {
+    if (document.getElementById("adminPassword").value == document.getElementsByName("viewport")[0].id.split("|")[1] && document.getElementById("proctorPassword").value != "") {
+        localStorage.newPW = JSON.stringify(document.getElementById("proctorPassword").value);
+        document.getElementById("status").style.display = "inline-block"; //Display success status
+    } else {
+        document.getElementById("proctorPassword").value = ""; //Clear proctor password field on failed auth attempt
+    }
+}
+
+function isNumeric(value) {
+    //Return true if given number/string is a positive whole number
+    return /^[+]?([.]\d+|\d+([.]\d+)?)$/.test(value);
+}
 </script>

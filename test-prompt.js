@@ -1,79 +1,73 @@
-//Prompt to begin test when ready, shows at start of test
-function beginTestPrompt() {
-    uiCtx.fillStyle = 'rgba(240,240,240,1)'; //Gray out background
-    uiCtx.fillRect(0, 0, W+UI_WIDTH, H);
+function Prompt (text, backgroundColor, promptButtons) {
+    this.text = text;
+    this.backgroundColor = backgroundColor;
+    this.promptButtons = promptButtons;
+    this.htmlElement;
 
-    uiCtx.fillStyle = 'white'; //Draw background box
-    uiCtx.strokeStyle = 'black';
-    uiCtx.lineWidth = 3;
-    uiCtx.beginPath();
-    uiCtx.roundRect((W+UI_WIDTH)/2-180, H/2-85, 360, 170, [10]);
-    uiCtx.fill();
-    uiCtx.stroke();
-
-    uiCtx.font = 'normal 500 30px Times New Roman'; //Draw text
-    uiCtx.fillStyle = "black";
-    uiCtx.fillText("Begin Test When Ready", (W+UI_WIDTH)/2, H/2-45);
-
-    uiCtx.lineWidth = 2; //Draw startTest button
-    uiCtx.fillStyle = "Green";
-    drawIconButton(startTest, uiCtx);
+    initializePrompt(this);
 }
 
-//Prompt to end test early, shows when user presses "end test" button
-function endTestPrompt() {
-    activePrompt = "endEarly";
-
-    uiCtx.fillStyle = 'rgba(0,0,0,0.3)'; //Gray out background
-    uiCtx.fillRect(0, 0, W+UI_WIDTH, H);
-
-    uiCtx.fillStyle = 'white'; //Draw background box (change width depending on text content)
-    uiCtx.strokeStyle = 'black';
-    uiCtx.lineWidth = 3;
-    uiCtx.beginPath();
-    if (IS_TEST) {
-        uiCtx.roundRect((W+UI_WIDTH)/2-220, H/2-190, 440, 170, [10]);
-    } else {
-        uiCtx.roundRect((W+UI_WIDTH)/2-180, H/2-190, 360, 170, [10]);
-    }
-    uiCtx.fill();
-    uiCtx.stroke();
-
-    uiCtx.font = 'normal 500 30px Times New Roman'; //Draw text (change text depending on IS_TEST?)
-    uiCtx.fillStyle = "black";
-    if (IS_TEST) {
-        uiCtx.fillText("End Test Before Timer Expires?", (W+UI_WIDTH)/2, H/2-150);
-    } else {
-        uiCtx.fillText("End Practice Session?", (W+UI_WIDTH)/2, H/2-150);
-    }
-
-    uiCtx.lineWidth = 2; //Draw yes and no buttons
-    uiCtx.fillStyle = "Green";
-    drawIconButton(yesEndTest, uiCtx);
-    uiCtx.fillStyle = "#6b0000";
-    drawIconButton(noEndTest, uiCtx);
+function PromptButton (content, iconColor, action) {
+    this.content = content;
+    this.iconColor = iconColor;
+    this.action = action;
 }
 
-//Prompt to proceed to scoring, shows when timer expires
-function timerExpiredPrompt() {
-    activePrompt = "timerExpired";
+function activatePrompt(prompt) {
+    if (activePrompt) {cancelPrompt();}
+    activePrompt = prompt;
+    prompt.htmlElement.style.display = "inline";
+}
 
-    uiCtx.fillStyle = 'rgba(0,0,0,0.3)'; //Gray out background
-    uiCtx.fillRect(0, 0, W+UI_WIDTH, H);
+function cancelPrompt() {
+    activePrompt.htmlElement.style.display = "none";
+    activePrompt = null;
+}
 
-    uiCtx.fillStyle = 'white'; //Draw background box
-    uiCtx.strokeStyle = 'black';
-    uiCtx.lineWidth = 3;
-    uiCtx.beginPath();
-    uiCtx.roundRect((W+UI_WIDTH)/2-140, H/2-190, 280, 170, [10]);
-    uiCtx.fill();
-    uiCtx.stroke();
+//Given the JS descriptions of each prompt, create an HTML element for each and reference that into the JS prompt object
+function initializePrompt(prompt) {
+    let modal = document.createElement("div"); //Initialize all modal elements
+    let modalContent = document.createElement("div");
+    let text = document.createElement("p");
+    let buttons = document.createElement("div");
 
-    uiCtx.font = 'normal 500 30px Times New Roman'; //Draw text 
-    uiCtx.fillStyle = "black";
-    uiCtx.fillText("Timer Expired", (W+UI_WIDTH)/2, H/2-150);
+    modal.className = "modal"; //Set attributes and classes of elements
+    modal.style.backgroundColor = prompt.backgroundColor;
 
-    uiCtx.lineWidth = 2; //Draw ok button
-    uiCtx.fillStyle = "Green";
-    drawIconButton(expiredOk, uiCtx);
+    modalContent.className = "modal-content";
+
+    buttons.className = "modal-buttonDiv";
+
+    text.innerHTML = prompt.text;
+
+    prompt.promptButtons.forEach(promptButton => { //Create the buttons for the modal
+        let button = document.createElement("button");
+        button.className = "iconButton";
+        button.style.color =  promptButton.iconColor;
+        button.onclick = promptButton.action;
+
+        let content;
+        if (promptButton.content.includes("fa")) {
+            content = document.createElement("i");
+            content.className = promptButton.content;
+        } else {
+            content = document.createElement("p");
+            content.innerHTML = promptButton.content;
+            content.style.marginTop = "0px";
+            content.style.marginBottom = "0px";
+        }
+        button.appendChild(content)
+
+        buttons.appendChild(button);
+    });
+
+    modalContent.appendChild(text); //Create family tree
+    modalContent.appendChild(buttons);
+    
+    if (prompt.text != "") { //Empty prompts shouldn't have content added
+        modal.appendChild(modalContent);
+    }
+
+    document.body.appendChild(modal);
+    prompt.htmlElement = modal;
 }

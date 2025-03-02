@@ -1,126 +1,131 @@
 <!DOCTYPE html>
-<html>
-<head>
-<title>DPAA Testing Software</title>
-</head>
+<head><title>DPAA Testing Software</title></head>
 
-<canvas id="canvas" width="0" height="0"></canvas>    
-<style>
-    body {
-        width: 100%;
-        height: 100%;
-        margin: 0px;
-        padding: 0px;
-        overflow: hidden;
-        display: block;
-        user-select: none;
-        -webkit-user-select: none;
-        -webkit-touch-callout: none;
-    }
-    canvas {
-        position: absolute;
-    }
-</style>
-<!-- Colors: FFFFFF, 4F3564, 000000 -->
 <!-- Font Awesome by Dave Gandy - http://fontawesome.io  -->
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+<style>
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0px;
+    padding: 0px;
+    overflow: hidden;
+    
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    font-family: 'Times New Roman', Times, serif;
+}
+p {
+    position: absolute;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    font-size: 2em;
+}
 
-<script src="gen-buttons.js"></script>
+#main {
+    display: flex;
+    flex-direction: column; 
+    justify-content: center;
+    font-size: 2em;    
+    padding: 0px 0px;
+    text-align: center;
+    height: 90vh;
+}
+#vers {
+    left: 10px;
+    top: 10px;
+}
+#devMode {
+    right: 10px;
+    top: 10px;
+}
+#copyright {
+    left: 10px;
+    bottom: 10px;
+}
+#title {
+    margin-top: 0px;
+    font-weight: 200;
+    margin-bottom: 0px;
+}
+#startTest {
+    background-color: #ffff00;
+}
+
+button {
+    color: black;
+    background-color: white;
+    outline: 2px solid black;
+    border-radius: 10px;
+    appearance: auto;
+    -webkit-appearance: none;
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    border: none;
+}
+.navButton {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 60px;
+    padding: 5px;
+    margin-top: 24px;
+    margin-bottom: 0px;
+    width: 315px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.iconButton {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    width: 70px;
+    height: 70px;
+    font-size: 60px;
+    padding: 0px;
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+</style>
+
+
+<body>
+<p id="vers"></p>
+<p id="copyright"></p>
+<p id="devMode" style="display: none;">DEV MODE</p>
+
+<div id="main">
+    <h1 id="title">Area Filling <br> Accuracy Evaluator</h1>
+    <button class="navButton" onclick="location.href = 'test.html'">Practice</button>
+    <button class="navButton" id="startTest" onclick="location.href = 'testBegin_auth.html'">Initiate Test</button>
+    <button class="navButton" id="info" onclick="location.href = 'info.html'">Info</button>
+</div>
+
+<button class="iconButton" onclick="location.href = 'settings_auth.html'"><i class="fa fa-cog"></i></button>
+</body>
+
+
 <script src="gen-config.js"></script>
-
 <script>
-//Constant Declarations----------------------------------------------------------------------------
-const VER = "4.0.1";
-
-// const W = window.innerWidth;
-// const H = window.innerHeight;
-const W = screen.height;
-const H = screen.width-20;
-
+const VERSION = "8.1.0";
 const YEAR = new Date().getFullYear();
 
-//Canvas Setup and Styling-------------------------------------------------------------------------
-var canvas = document.getElementById('canvas')
-var ctx = canvas.getContext("2d", { willReadFrequently: false, aplha: false });
+//Set HTML elements
+document.getElementById("vers").textContent = VERSION;
+document.getElementById("copyright").textContent = "© " + YEAR + " McPhail Patents and Research LLC";
 
-canvas.width = W;
-canvas.height = H;
+//Enable the devMode indicator if it is active
+if (COMP_TESTING) document.getElementById("devMode").style.display = "block";
 
-ctx.textAlign = "center";
-ctx.textBaseline = "middle";
-
-
-//Variable Declarations----------------------------------------------------------------------------
-var buttons = [];
-var practice = new Button(W/2-160, 290, 320, 70, () => {sessionStorage.isTest = JSON.stringify("false"); location.href = "test.html";}, 'Practice', 0, false, false);
-var test = new Button(W/2-160, 400, 320, 70, () => {location.href = "password-begin.html";}, 'Begin Test', 0, false, false);
-// var info = new Button(W/2-160, 480, 320, 70, () => {}, 'Info', 0, false, false);
-var settings = new Button(W-80, H-80, 70, 70, () => {location.href = "password-settings.html";}, '\uF013', 0, false, false);
-
-
-//Initialize Settings------------------------------------------------------------------------------
-if (localStorage.length < Object.keys(defaultSettings).length) { //Only initialize settings if not already present
-    localStorage.selectedFigure = JSON.stringify(defaultSettings.selectedFigure);
-    localStorage.timerLengthMinutes = JSON.stringify(defaultSettings.timerLengthMinutes);
-    localStorage.displayGrid = JSON.stringify(defaultSettings.displayGrid);
-    localStorage.maxBrushSize = JSON.stringify(defaultSettings.maxBrushSize);
-    localStorage.minBrushSize = JSON.stringify(defaultSettings.minBrushSize);
-    localStorage.defaultBrushPercentage = JSON.stringify(defaultSettings.defaultBrushPercentage);
-    localStorage.practiceDrawMode = JSON.stringify(defaultSettings.practiceDrawMode);
-}
-
-
-//TouchStart Listener------------------------------------------------------------------------------
-document.addEventListener("touchstart", e => {
-    if (e.timeStamp > 500) {
-        buttons.forEach(button => {
-            handleButtonTouch(button, e.touches[0]);
-        });
-    }  
-})
-
-
-//Drawing the content of the main canvas-----------------------------------------------------------
-function redraw() {
-    //Clear the canvas every redraw
-    ctx.clearRect(0, 0, W, H);
-
-    ctx.font = 'normal 500 30px Times New Roman';
-    ctx.fillStyle = "black";
-
-    //Copyright Text
-    ctx.textAlign = "left";
-    ctx.fillText(YEAR + ' McPhail Patents and Research LLC', 40, H-25);
-
-    //Version Number
-    ctx.textAlign = "center";
-    ctx.fillText(VER, 40, 20);
-
-    //Title
-    ctx.font = 'normal 500 65px Times New Roman';
-    ctx.fillText("Area Filling", W/2, 150);
-    ctx.fillText("Accuracy Evaluation Tool", W/2, 220);
-
-    //Draw icon buttons
-    ctx.lineWidth = 1.5;
-    ctx.fillStyle = "#4F3564";
-    buttons.forEach(button => {
-        drawIconButton(button, ctx);
-    });
-
-    //Copyright Icon
-    ctx.font = '30px FontAwesome';
-    ctx.fillStyle = "black";
-    ctx.fillText('\uF1F9', 20, H-25);
-}    
-redraw(); //Call redraw to start loading the used fonts
-function load () { 
-    if (document.fonts.check('1px FontAwesome')) {
-        redraw(); //Call redraw once fonts are loaded to display everything correctly
-    } else {
-        setTimeout(load, 20); //Recursively check every 20ms until font loads
+//For each settings option, initialize it to the default value if it is undefined
+for (const [key, value] of Object.entries(defaultSettings)) {
+    if (localStorage[key] == undefined) {
+        localStorage[key] = JSON.stringify(defaultSettings[key]);
     }
-}
-load(); //Begin loading loop
+};
+sessionStorage.isTest = JSON.stringify("false");
+
+//Enable or disable the info button
+if (JSON.parse(localStorage["infoButton"]) == "false") document.getElementById("info").style.display = "none";
 </script>
-</html>

@@ -63,145 +63,73 @@ function drawCtxRedraw() {
 //Drawing the content of the figure canvas---------------------------------------------------------
 function figureCtxRedraw () {
     figureCtx.clearRect(0, 0, W, H);
-    let resolution = THETA_RESOLUTION_LOW_LOD
+    let resolution = THETA_RESOLUTION_LOW_LOD;
 
     //Get the theta range of the part of the outline visible on screen
-    let minAngle = PI;
-    let maxAngle = -PI;
-    if (offsetX > 0 && (offsetX-W)*zoom < 0 && offsetY > 0 && (offsetY-H)*zoom < 0) { //If center of figure is visible set visible angle to -PI->PI
-        minAngle = -PI;
-        maxAngle = PI;
+    let minAngle = TAU; //Set these to the opposite values to enable finding min and max later
+    let maxAngle = 0;
+    if (offsetX > 0 && (offsetX-W)*zoom < 0 && offsetY > 0 && (offsetY-H)*zoom < 0) { //If center of figure is visible set visible angle to 0->TAU
+        minAngle = SELECTED_FIGURE.minTheta;
+        maxAngle = SELECTED_FIGURE.maxTheta;
         resolution = THETA_RESOLUTION_HIGH_LOD
     } else {
+        let figureYOffset = AVG_Y*SCALE*zoom;
         let cornerAngles = [ //Otherwise find the theta values that point to each corner of the screen
-            Math.atan2(-offsetY*zoom, -offsetX*zoom),
-            Math.atan2((-offsetY+H)*zoom, -offsetX*zoom),
-            Math.atan2((-offsetY+H)*zoom, (-offsetX+W)*zoom),
-            Math.atan2(-offsetY*zoom, (-offsetX+W)*zoom)
+            Math.atan2(offsetY+figureYOffset, -offsetX+W),
+            Math.atan2(offsetY+figureYOffset, -offsetX),
+            -Math.atan2(-offsetY+H-figureYOffset, -offsetX),
+            -Math.atan2(-offsetY+H-figureYOffset, -offsetX+W)
         ];
         for (let i = 0; i < 4; i++) { //Find the corners with the min and max theta values
-            minAngle = Math.min(minAngle, -cornerAngles[i]);
-            maxAngle = Math.max(maxAngle, -cornerAngles[i]);
+            if (cornerAngles[i] < 0) cornerAngles[i] = TAU+cornerAngles[i]; 
+
+            minAngle = Math.min(minAngle, cornerAngles[i]);
+            maxAngle = Math.max(maxAngle, cornerAngles[i]);
         }
-        if (offsetX > 0 && Math.sign(minAngle) != Math.sign(maxAngle)) { //Handle the -180->180 discontinuity
-            maxAngle = -cornerAngles[2]+TAU;
-            minAngle = -cornerAngles[3]; 
+        if (offsetX < 0 && minAngle < PI/4 && maxAngle > 3*PI/2) { //Handle the 360->0 discontinuity
+            maxAngle = cornerAngles[1];
+            minAngle = cornerAngles[2]-TAU; 
         }
     }
     
     //Drawing the visible part of the figure outline
-    figureCtx.lineWidth = 2;
-    figureCtx.beginPath();
-
-    let r = SELECTED_FIGURE.calcRad(minAngle)*FIGURE_SCALE;
-    figureCtx.lineTo(offsetX+r*Math.cos(minAngle)*zoom, offsetY-r*Math.sin(minAngle)*zoom);
-
-    for (let theta = minAngle; theta <= maxAngle; theta += (maxAngle-minAngle)/resolution) {
-        r = SELECTED_FIGURE.calcRad(theta)*FIGURE_SCALE;
-
-        figureCtx.lineTo(offsetX+r*Math.cos(theta)*zoom, offsetY-r*Math.sin(theta)*zoom);
+    if (SELECTED_FIGURE.maxTheta-TAU != SELECTED_FIGURE.minTheta) {
+        maxAngle = Math.min(maxAngle, SELECTED_FIGURE.maxTheta);
+        minAngle = Math.max(minAngle, SELECTED_FIGURE.minTheta);
     }
-    figureCtx.stroke();
+    let thetaInc = (maxAngle-minAngle)/resolution;
 
-    //Add a line on the right side of canvas to seperate UI Bar
-    line(W, 0, W, H, 5, figureCtx);
+    let innerPath = new Path2D();
+    let outerPath = new Path2D();
+
+    rads = getCoordsFromFigure(minAngle, SCALE*zoom, offsetX, offsetY);
+    innerPath.moveTo(rads.innerX, rads.innerY);
+    outerPath.moveTo(rads.outerX, rads.outerY);
+
+    for (let theta = minAngle+thetaInc; theta <= maxAngle; theta += thetaInc) {
+        rads = getCoordsFromFigure(theta, SCALE*zoom, offsetX, offsetY);
+        innerPath.lineTo(rads.innerX, rads.innerY);
+        outerPath.lineTo(rads.outerX, rads.outerY);
+    }
+
+    rads = getCoordsFromFigure(maxAngle, SCALE*zoom, offsetX, offsetY);
+    innerPath.lineTo(rads.innerX, rads.innerY);
+    outerPath.lineTo(rads.outerX, rads.outerY); 
+
+    figureCtx.stroke(innerPath);
+    figureCtx.stroke(outerPath);
 }
 
+function getCoordsFromFigure(theta, scale, screenOffsetX, screenOffsetY) {
+    let equationPair = SELECTED_FIGURE.calcRad(theta);
+    
+    let yOffset = -AVG_Y*scale;
 
-//Drawing the content of the UI canvas-------------------------------------------------------------
-function uiRedraw () {
-    //Clear the canvas every redraw
-    uiCtx.clearRect(0, 0, W+UI_WIDTH, H);
+    let innerRad = equationPair.inner*scale;
+    let outerRad = equationPair.outer*scale;
 
-    // Draw Timer
-    if (IS_TEST) {
-        uiCtx.fillStyle = "white";
-        uiCtx.strokeStyle = "black";
-        uiCtx.lineWidth = 2;
-        uiCtx.beginPath();
-        uiCtx.roundRect(W/2-85, -2, 170, 57, [0, 0, 10, 10]);
-        uiCtx.fill();
-        uiCtx.stroke();
-
-        let mins = "" + Math.floor(timerSeconds/60);
-        if (mins.length <= 1) {
-            mins = "0"+mins;
-        }
-        let secs = "" + timerSeconds%60;
-        if (secs.length <= 1) {
-            secs = "0"+secs;
-        }
-        uiCtx.fillStyle = "black";
-        uiCtx.font = "normal 500 60px Times New Roman";
-        uiCtx.fillText(mins+":"+secs, W/2, 27);
-    }
-
-    //Draw brush size slider
-    let sliderHeight = SLIDER_Y2-(brushSize-MIN_BRUSH_SIZE)/(MAX_BRUSH_SIZE-MIN_BRUSH_SIZE)*(SLIDER_Y2-SLIDER_Y1);
-
-    line(UI_CENTER, SLIDER_Y1, UI_CENTER, SLIDER_Y2, 10, uiCtx)
-    uiCtx.strokeStyle = "#d6d6d6";
-    line(UI_CENTER, SLIDER_Y1, UI_CENTER, SLIDER_Y2, 6, uiCtx)
-    uiCtx.strokeStyle = "#a1a1a1";
-    line(UI_CENTER, sliderHeight, UI_CENTER, SLIDER_Y2, 6, uiCtx)
-
-    //Draw current brush size
-    uiCtx.strokeStyle = "black";
-    uiCtx.lineWidth = 2;
-    if (brushColor == ERASE_COLOR) {
-        uiCtx.fillStyle = "#f2f2f2";
-    } else {
-        uiCtx.fillStyle = DRAW_COLOR;
-    }
-    circle(UI_CENTER, sliderHeight, brushSize/MAX_BRUSH_SIZE*UI_BRUSH_RAD+5, true, uiCtx);
-    uiCtx.stroke();
-
-    //Draw icon buttons
-    uiCtx.lineWidth = 1.5;
-    uiCtx.fillStyle = "#4F3564";
-    let recurse = false;
-    buttons.forEach(button => {
-        drawIconButton(button, uiCtx);
-        if (button.trans-- > 0) {
-            recurse = true;
-        }
-    });
-    if (recurse) {
-        requestAnimationFrame(uiRedraw);
-    }
-
-    //Draw end test button
-    uiCtx.fillStyle = "#f2f2f2";
-    uiCtx.lineWidth = 4;
-    uiCtx.beginPath();
-    uiCtx.roundRect(10, H-80, 70, 70, [10]);
-    uiCtx.stroke();
-    uiCtx.fill();
-
-    uiCtx.font = 'normal 500 30px Times New Roman';
-    uiCtx.fillStyle = "#6b0000";
-    uiCtx.fillText("End", 45, H-59.5);
-    uiCtx.fillText("Test", 45, H-29.5);
-
-    //Draw Eraser/Pencil Toggle
-    uiCtx.fillStyle = 'rgba(0,0,0,0.1)';
-    uiCtx.beginPath();
-    uiCtx.roundRect(pencil.x, pencil.y, pencil.w, pencil.h, [10, 10, 0, 0]);
-    if (brushColor == DRAW_COLOR) {
-        uiCtx.lineWidth = 3;
-    } else {
-        uiCtx.lineWidth = 1.5;
-        uiCtx.fill();
-    }
-    uiCtx.stroke();
-
-    uiCtx.beginPath();
-    uiCtx.roundRect(eraser.x, eraser.y, eraser.w, eraser.h, [0, 0, 10, 10]);
-    if (brushColor == ERASE_COLOR) {
-        uiCtx.lineWidth = 3;
-    } else {
-        uiCtx.fill();
-        uiCtx.lineWidth = 1.5;
-    }
-    uiCtx.stroke();
+    return new coordPair (
+        screenOffsetX+innerRad*cos(theta), screenOffsetY-(innerRad*sin(theta)+yOffset),
+        screenOffsetX+outerRad*cos(theta), screenOffsetY-(outerRad*sin(theta)+yOffset)
+    )
 }
