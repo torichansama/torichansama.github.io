@@ -196,8 +196,8 @@ function mainRedraw() {
     oldGridSize = dynamicGridSize;
 
     //Limit panning
-    offsetX = clamp(offsetX, W-W*0.55*zoom, W*0.55*zoom);
-    offsetY = clamp(offsetY, H-H*0.55*zoom, H*0.55*zoom);
+    offsetX = clamp(offsetX, W-W*0.53*zoom, W*0.53*zoom);
+    offsetY = clamp(offsetY, H-H*0.53*zoom, H*0.53*zoom);
 
     //Call each canvas' redraw functions
     gridCtxRedraw();
@@ -319,7 +319,7 @@ function zoomOut(animate) {
 
 //Bump zoom out then back in
 function zoomOutAnimation(inc) {
-    zoom -= 0.007*Math.sign(10-inc);
+    zoom -= 0.005*Math.sign(10-inc);
     zoomX = offsetX;
     zoomY = H/2-offsetY;
     mainRedraw();
