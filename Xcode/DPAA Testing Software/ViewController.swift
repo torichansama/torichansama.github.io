@@ -1,7 +1,7 @@
 //
 //  ViewController.swift
 //  DPAA Testing Software
-// 
+//
 //  Created by Thomas Radabaugh on 1/5/25.
 //
 
@@ -24,15 +24,14 @@ class ViewController: UIViewController, WKUIDelegate {
             "meta.id = '" + passCodeString + "';" +
             "meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';" +
             "var head = document.getElementsByTagName('head')[0];" +
-            "head.appendChild(meta);"
+            "head.appendChild(meta);"	
         let script: WKUserScript = WKUserScript(source: source, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
         webConfiguration.userContentController.addUserScript(script)
         webView = WKWebView(frame: .zero, configuration: webConfiguration)
+        webView.configuration.preferences.isTextInteractionEnabled = false
         webView.uiDelegate = self
         view = webView
-        
     }
-
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -42,4 +41,3 @@ class ViewController: UIViewController, WKUIDelegate {
         webView.load(myRequest)
     }
 }
-
