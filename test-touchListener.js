@@ -12,6 +12,8 @@ function Touch(pageX, pageY, touchType) {
     this.touchType = touchType;
 }
 
+figureCanvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+
 //TouchStart Listener------------------------------------------------------------------------------
 figureCanvas.addEventListener("touchstart", e => {
     touches = correctTouches(e.touches);
