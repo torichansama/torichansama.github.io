@@ -177,9 +177,8 @@ sessionStorage.isTest = JSON.stringify("false"); //Clear any previously set isTe
 
 mainRedraw(); //Draw main content
 
-// if (IS_TEST) {
-    activatePrompt(handedness);
-// }
+activatePrompt(handedness); //Call handedness prompt
+
 if (ENABLE_TIMER) {
     document.getElementById("timerDiv").style.display = "block"; //Display timer
     updateTimer(); //Display initialized time
@@ -231,14 +230,19 @@ setBrush(DRAW_COLOR); //Initialize to brush instead of eraser
 function setHandedness(hand) {
     let sideDiv = document.getElementById("sideDiv");
 
-    if (hand == "left") {
+    if (hand == "right") {
         sideDiv.style.left = "0px";
         sideDiv.style.right = "auto";
 
         document.getElementById("topDiv").style.left = "90px";
+        document.getElementById("topDiv").style.flexDirection = "row-reverse";
+
         for (let i = 0; i < canvasCol.length; i++) {
             canvasCol[i].style.left = "90px";
         }
+
+        document.getElementById("timerDiv").style.marginLeft = "0px";
+        document.getElementById("timerDiv").style.marginRight = "90px";
 
         touchXOffset = 90;
     }
