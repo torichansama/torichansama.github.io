@@ -4,6 +4,7 @@
 <!-- Font Awesome by Dave Gandy - http://fontawesome.io -->    
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
 <link rel="stylesheet" href="test_style.css">
+
 <body>
 <!-- Canvas stack for background grid, drawing, and rendering the figure -->
 <canvas id="gridCanvas"></canvas>    
@@ -11,12 +12,12 @@
 <canvas id="figureCanvas"></canvas>
 
 <!-- Timer -->
-<div id="topDiv">
+<!-- <div id="topDiv"> -->
     <div id="timerDiv">
         <p id="timer" style="margin-bottom: 0px; margin-top: 7px;"></p>
     </div>
     <button id="endEarly" onclick="promptSessionEnd()">End</button>
-</div>
+<!-- </div> -->
 
 <div id="sideDiv">
     <!-- Buttons -->
@@ -228,22 +229,24 @@ setBrush(DRAW_COLOR); //Initialize to brush instead of eraser
 
 //Set handedness of user---------------------------------------------------------------------------
 function setHandedness(hand) {
-    let sideDiv = document.getElementById("sideDiv");
-
     if (hand == "right") {
-        sideDiv.style.left = "0px";
-        sideDiv.style.right = "auto";
-
-        document.getElementById("topDiv").style.left = "90px";
-        document.getElementById("topDiv").style.flexDirection = "row-reverse";
-
+        //Handle all the canvas'
         for (let i = 0; i < canvasCol.length; i++) {
             canvasCol[i].style.left = "90px";
         }
 
+        //Handle sidebar UI
+        document.getElementById("sideDiv").style.left = "0px";
+        document.getElementById("sideDiv").style.right = "auto";
+
+        //Handle Timer and End Test Buttons
+        document.body.style.flexDirection = "row-reverse";
         document.getElementById("timerDiv").style.marginLeft = "0px";
         document.getElementById("timerDiv").style.marginRight = "90px";
+        document.getElementById("endEarly").style.marginLeft = "100px";
+        document.getElementById("endEarly").style.marginRight = "10px";
 
+        //Handle the touch offset
         touchXOffset = 90;
     }
 
