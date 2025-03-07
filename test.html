@@ -42,6 +42,7 @@
 const PI = Math.PI;
 const TAU = 2*Math.PI;
 
+var scale = window.devicePixelRatio;
 const W = COMP_TESTING ? window.innerWidth-90 : screen.height-90;
 const H = COMP_TESTING ? window.innerHeight : screen.width;
 
@@ -92,8 +93,16 @@ var figureCtx = figureCanvas.getContext("2d", { willReadFrequently: false, aplha
 
 var canvasCol = document.getElementsByTagName("canvas");
 for (let i = 0; i < canvasCol.length; i++) {
-    canvasCol[i].width = W; canvasCol[i].height = H;
+    canvasCol[i].style.width = `${W}px`;
+    canvasCol[i].style.height = `${H}px`;
+
+    canvasCol[i].width = W*scale; 
+    canvasCol[i].height = H*scale;
 }
+
+gridCtx.scale(scale, scale);
+drawCtx.scale(scale, scale);
+figureCtx.scale(scale, scale);
 
 gridCtx.strokeStyle = "black";
 
