@@ -28,7 +28,6 @@ class ViewController: UIViewController, WKUIDelegate {
         let script: WKUserScript = WKUserScript(source: source, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
         webConfiguration.userContentController.addUserScript(script)
         webView = WKWebView(frame: .zero, configuration: webConfiguration)
-        webView.configuration.preferences.isTextInteractionEnabled = false
         webView.uiDelegate = self
         view = webView
     }
