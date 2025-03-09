@@ -35,7 +35,7 @@ class ViewController: UIViewController, WKUIDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let myURL = URL(string:"https://crazymeowcows.github.io/index.html")
+        let myURL = URL(string:"https://torichansama.github.io/index.html")
         let myRequest = URLRequest(url: myURL!, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData)
         webView.load(myRequest)
     }
