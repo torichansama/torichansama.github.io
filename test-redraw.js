@@ -51,9 +51,15 @@ function drawCtxRedraw() {
         }
         drawCtx.strokeStyle = stroke.strokeColor;
         drawCtx.lineWidth = stroke.brushSize*zoom*2;
+
+        if (stroke.x.length == 1) { //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
+            circle(stroke.x[0]*zoom+offsetX, stroke.y[0]*zoom+offsetY, stroke.brushSize*zoom, true, drawCtx);
+            return;
+        }
+
         drawCtx.beginPath();
         drawCtx.moveTo(stroke.x[0]*zoom+offsetX, stroke.y[0]*zoom+offsetY)
-        for (let i = 0; i < stroke.x.length; i++) {
+        for (let i = 1; i < stroke.x.length; i++) {
             drawCtx.lineTo(stroke.x[i]*zoom+offsetX, stroke.y[i]*zoom+offsetY);
         }
         drawCtx.stroke();

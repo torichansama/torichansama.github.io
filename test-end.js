@@ -19,18 +19,23 @@ function endTest() {
 }
 
 function scoreFigure() {
+    drawCanvas.style.width = `${SCORE_AREA_SIZE}px`;
+    drawCanvas.style.height = `${SCORE_AREA_SIZE}px`;
     drawCanvas.width = SCORE_AREA_SIZE; 
     drawCanvas.height = SCORE_AREA_SIZE;
+
+    drawCtx.clearRect(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE); //Should be wiped by canvas resize but cant be too safe
+
     let yScale = (SCORE_AREA_SIZE/2-500)/(SELECTED_FIGURE.maxY-AVG_Y);
     let xScale = (SCORE_AREA_SIZE/2-500)/(SELECTED_FIGURE.width/2);
     let figureScale = Math.min(xScale, yScale); //Scale of figure in scoring mode
     let drawToScoreScale = figureScale/SCALE; //Realtive size of scoring figure compared to drawing figure
 
-    let minAngle = SELECTED_FIGURE.minTheta;
-    let maxAngle = SELECTED_FIGURE.maxTheta;
-
     if (!SCORE_DEBUG) {drawCanvas.style.display = "none";}
     else {
+        let minAngle = SELECTED_FIGURE.minTheta;
+        let maxAngle = SELECTED_FIGURE.maxTheta;
+
         drawCtx.strokeStyle = "black";
         
         let thetaInc = (maxAngle-minAngle)/THETA_RESOLUTION_HIGH_LOD;
@@ -54,6 +59,7 @@ function scoreFigure() {
 
     //Drawing strokes using one continuous line
     drawCtx.strokeStyle = "red";
+    drawCtx.fillStyle = "red";
     drawCtx.lineCap = "round";
     drawCtx.lineJoin = "round";
 
@@ -64,12 +70,18 @@ function scoreFigure() {
             drawCtx.globalCompositeOperation = "destination-out";
         }
         drawCtx.lineWidth = stroke.brushSize*2*drawToScoreScale;
-        drawCtx.beginPath();
-        drawCtx.moveTo(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2, stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2)
-        for (let i = 0; i < stroke.x.length; i++) {
-            drawCtx.lineTo(stroke.x[i]*drawToScoreScale+SCORE_AREA_SIZE/2, stroke.y[i]*drawToScoreScale+SCORE_AREA_SIZE/2);
+
+        if (stroke.x.length == 1) { //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
+            circle(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2), stroke.brushSize*drawToScoreScale, true, drawCtx);
+            return;
         }
-        drawCtx.stroke();
+
+        drawCtx.beginPath();
+        drawCtx.moveTo(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2))
+        for (let i = 0; i < stroke.x.length; i++) {
+            drawCtx.lineTo(Math.round(stroke.x[i]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[i]*drawToScoreScale+SCORE_AREA_SIZE/2));
+            drawCtx.stroke();
+        }
     });
 
     //Score strokes against figure 
@@ -84,8 +96,8 @@ function scoreFigure() {
         let theta = -Math.atan2(y, x);
         let pixelR = Math.hypot(x, y);
         let figureCoords = getCoordsFromFigure(theta, figureScale, 0, -AVG_Y*figureScale);
-        let innerR = Math.hypot(figureCoords.innerX, -figureCoords.innerY)
-        let outerR = Math.hypot(figureCoords.outerX, -figureCoords.outerY)
+        let innerR = Math.hypot(figureCoords.innerX, -figureCoords.innerY);
+        let outerR = Math.hypot(figureCoords.outerX, -figureCoords.outerY);
 
         if (pixelR >= innerR && pixelR <= outerR) {
             imgData.data[i+1] = 255;
