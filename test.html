@@ -103,7 +103,7 @@ drawCtx.scale(scale, scale);
 figureCtx.scale(scale, scale);
 
 //Color of the grid
-gridCtx.strokeStyle = "grey"; //CHANGE ME!
+gridCtx.strokeStyle = "purple"; //CHANGE ME!
 
 drawCtx.lineCap = "round";
 drawCtx.lineJoin = "round";
@@ -342,3 +342,4 @@ function zoomOutAnimation(inc) {
     if (inc < 20) requestAnimationFrame(() => {zoomOutAnimation(inc+1)});
 }
 </script>
+</html>
