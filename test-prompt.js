@@ -1,13 +1,14 @@
-function Prompt (text, backgroundColor, promptButtons) {
+function Prompt (text, backgroundColor, PromptElements) {
     this.text = text;
     this.backgroundColor = backgroundColor;
-    this.promptButtons = promptButtons;
+    this.PromptElements = PromptElements;
     this.htmlElement;
 
     initializePrompt(this);
 }
 
-function PromptButton (content, iconColor, action) {
+function PromptElement (elementType, content, iconColor, action) {
+    this.elementType = elementType;
     this.content = content;
     this.iconColor = iconColor;
     this.action = action;
@@ -40,25 +41,34 @@ function initializePrompt(prompt) {
 
     text.innerHTML = prompt.text;
 
-    prompt.promptButtons.forEach(promptButton => { //Create the buttons for the modal
-        let button = document.createElement("button");
-        button.className = "iconButton";
-        button.style.color =  promptButton.iconColor;
-        button.onclick = promptButton.action;
+    prompt.PromptElements.forEach(PromptElement => { //Create the buttons for the modal
+        if (PromptElement.elementType == "button") {
+            let button = document.createElement("button");
+            button.className = "iconButton";
+            button.style.color =  PromptElement.iconColor;
+            button.onclick = PromptElement.action;
 
-        let content;
-        if (promptButton.content.includes("fa")) {
-            content = document.createElement("i");
-            content.className = promptButton.content;
-        } else {
-            content = document.createElement("p");
-            content.innerHTML = promptButton.content;
-            content.style.marginTop = "0px";
-            content.style.marginBottom = "0px";
+            let content;
+            if (PromptElement.content.includes("fa")) {
+                content = document.createElement("i");
+                content.className = PromptElement.content;
+            } else {
+                content = document.createElement("p");
+                content.innerHTML = PromptElement.content;
+                content.style.marginTop = "0px";
+                content.style.marginBottom = "0px";
+            }
+            button.appendChild(content)
+
+            buttons.appendChild(button);
+        } else if (PromptElement.elementType == "progress") {
+            let progress = document.createElement("progress");
+            progress.id = "progress";
+            progress.value = 0;
+            progress.max = 1;
+
+            buttons.appendChild(progress);
         }
-        button.appendChild(content)
-
-        buttons.appendChild(button);
     });
 
     modalContent.appendChild(text); //Create family tree

@@ -166,23 +166,25 @@ function extendCurrentStroke (rawX, rawY) {
 // Prompts must be called with activatePrompt(prompt_to_activate)
 // To clear the active prompt, call clearPrompt()
 var beginTest = new Prompt("Press play to begin test.<br></br>Timer countdown will begin immediately.", "rgba(240,240,240,1)", [
-    new PromptButton("fa fa-caret-right", "green", cancelPrompt)
+    new PromptElement("button", "fa fa-caret-right", "green", cancelPrompt)
 ]);
 var endTestEarly = new Prompt("End Test Before Timer Ends?", "rgba(0,0,0,0.3)", [
-    new PromptButton("fa fa-check", "green", endTest),
-    new PromptButton("fa fa-times", "#6b0000", cancelPrompt)
+    new PromptElement("button", "fa fa-check", "green", endTest),
+    new PromptElement("button", "fa fa-times", "#6b0000", cancelPrompt)
 ]);
 var endPracticeEarly = new Prompt("End Practice Session?", "rgba(0,0,0,0.3)", [
-    new PromptButton("fa fa-check", "green", endTest),
-    new PromptButton("fa fa-times", "#6b0000", cancelPrompt)
+    new PromptElement("button", "fa fa-check", "green", endTest),
+    new PromptElement("button", "fa fa-times", "#6b0000", cancelPrompt)
 ]);
 var timerExpired = new Prompt("Timer Expired.", "rgba(0,0,0,0.3)", [
-    new PromptButton("fa fa-arrow-right", "green", endTest),
+    new PromptElement("button", "fa fa-arrow-right", "green", endTest),
 ]);
-var loading = new Prompt("", "rgba(240,240,240,1)", []);
+var loading = new Prompt("Scoring...", "rgba(240,240,240,1)", [
+    new PromptElement("progress", "fa fa-arrow-right", "green", endTest),
+]);
 var handedness = new Prompt("Select your dominant hand:", "rgba(240,240,240,1)", [
-    new PromptButton("L", "black", ()=>{setHandedness("left")}),
-    new PromptButton("R", "black", ()=>{setHandedness("right")})
+    new PromptElement("button", "L", "black", ()=>{setHandedness("left")}),
+    new PromptElement("button", "R", "black", ()=>{setHandedness("right")})
 ]);
 
 //Program Initialization---------------------------------------------------------------------------

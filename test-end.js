@@ -12,13 +12,17 @@ function endTest() {
     if (!SCORE_DEBUG) activatePrompt(loading);
 
     if (ENABLE_SCORING) {
-        setTimeout(scoreFigure, 40);
+        setTimeout(scoreFigure, 500);
     } else {
         location.href = "index.html";
     }
 }
 
+var scoreInc = 0;
+
 function scoreFigure() {
+    let progressBar = document.getElementById("progress");
+
     drawCanvas.style.width = `${SCORE_AREA_SIZE}px`;
     drawCanvas.style.height = `${SCORE_AREA_SIZE}px`;
     drawCanvas.width = SCORE_AREA_SIZE; 
@@ -85,12 +89,18 @@ function scoreFigure() {
     });
 
     //Score strokes against figure 
-    let scoreInc = 0;
-    imgData = drawCtx.getImageData(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE);
-    for (let i = 0; i < imgData.data.length; i += 4) {
+    let imgData = drawCtx.getImageData(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE);
+    mainScoreLoop(0, imgData, figureScale, progressBar);
+}
+
+function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
+    let i = startingOffset;
+    while (i < startingOffset+imgData.data.length/8) { //WARNING! This divisor MUST be a multiple of 4 to prevent erronous scoring
         if (imgData.data[i] == 0 && !FIND_MAX_SCORE) { //Skip blank pixels
+            i += 4;
             continue;
         }
+
         let x = (i / 4) % SCORE_AREA_SIZE - SCORE_AREA_SIZE/2;
         let y = Math.floor((i / 4) / SCORE_AREA_SIZE) - SCORE_AREA_SIZE/2 - AVG_Y*figureScale;
         let theta = -Math.atan2(y, x);
@@ -112,7 +122,19 @@ function scoreFigure() {
             imgData.data[i+2] = 255;
             imgData.data[i+3] = 255;
         }
+        i += 4;
     }
+
+    progressBar.value = i/imgData.data.length;
+
+    if (i < imgData.data.length) {
+        setTimeout(()=>{mainScoreLoop(i, imgData, figureScale, progressBar)}, 0);
+    } else {
+        saveScore(imgData);
+    }
+}
+
+function saveScore(imgData) {
     drawCtx.putImageData(imgData, 0, 0);
 
     if (FIND_MAX_SCORE) { //Alert the max score

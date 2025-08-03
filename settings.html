@@ -119,7 +119,7 @@ p {
     <div class="inputField">
         <label for="infoButton">Info Page:</label>
         <select id="infoButton" style='font-size: 1em;'>
-            <option value="true">On</option>
+            <!-- <option value="true">On</option> -->
             <option value="false">Off</option>
         </select>
     </div>
@@ -225,7 +225,7 @@ function saveAndExit() {
 }
 
 function checkValidEntries() {
-    let errorFlag = false;
+    let errorFlag = false; //Loop through all entries to flag multiple errors, not just the first one 
     for (const [key, value] of Object.entries(defaultSettings)) {
         element = document.getElementById(key);
 

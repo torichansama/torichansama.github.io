@@ -116,7 +116,7 @@ button {
 <div id = "container">
     <h2>Assessment has ended.</h2>
     <p>Please inform proctor that you have completed this section of the assessment.</p>
-    <p>Their passcode is necessary to view and record your filling accuracy.</p>
+    <p>Their passcode is necessary to view and record your score.</p>
     <div id = "inputField">
         <label for="proctorPassword">Password:</label>
         <input id="proctorPassword" type="password" required autocomplete="off" style='font-size: 1em;'/>
@@ -142,7 +142,7 @@ button {
 <script>
 document.getElementById("submit").onclick = () => {
     if (authenticate(document.getElementById("proctorPassword").value) && JSON.parse(sessionStorage.scoreObject) != "") {
-        document.getElementById("score").textContent = "Filling Accuracy: " + JSON.parse(sessionStorage.scoreObject);
+        document.getElementById("score").textContent = "Participant Score: " + JSON.parse(sessionStorage.scoreObject);
         document.getElementById("home").style.display = "inline";
         sessionStorage.scoreObject = JSON.stringify(""); //Clears drawing score from session storages
     } else {
