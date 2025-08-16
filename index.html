@@ -100,7 +100,6 @@ button {
     <button class="navButton" onclick="location.href = 'test.html'">Practice</button>
     <!-- <button class="navButton" id="startTest" onclick="location.href = 'testBegin_auth.html'">Initiate Test</button> -->
     <button class="navButton" id="startTest" onclick="location.href = 'test.html'; sessionStorage.isTest = JSON.stringify('true')">Initiate Test</button>
-    <button class="navButton" id="info" onclick="location.href = 'info.html'">Info</button>
 </div>
 
 <button class="iconButton" onclick="location.href = 'settings_auth.html'"><i class="fa fa-cog"></i></button>
@@ -127,7 +126,4 @@ for (const [key, value] of Object.entries(defaultSettings)) {
 };
 sessionStorage.isTest = JSON.stringify("false");
 
-//Enable or disable the info button
-localStorage["infoButton"] = JSON.stringify("false"); //force ovveride to disable the info button
-if (JSON.parse(localStorage["infoButton"]) == "false") document.getElementById("info").style.display = "none";
 </script>
