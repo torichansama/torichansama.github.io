@@ -98,7 +98,8 @@ button {
 <div id="main">
     <h1 id="title">Test #1</h1>
     <button class="navButton" onclick="location.href = 'test.html'">Practice</button>
-    <button class="navButton" id="startTest" onclick="location.href = 'testBegin_auth.html'">Initiate Test</button>
+    <!-- <button class="navButton" id="startTest" onclick="location.href = 'testBegin_auth.html'">Initiate Test</button> -->
+    <button class="navButton" id="startTest" onclick="location.href = 'test.html'; sessionStorage.isTest = JSON.stringify('true')">Initiate Test</button>
     <button class="navButton" id="info" onclick="location.href = 'info.html'">Info</button>
 </div>
 
@@ -108,7 +109,7 @@ button {
 
 <script src="gen-config.js"></script>
 <script>
-const VERSION = "9.0.1";
+const VERSION = "9.0.2";
 const YEAR = new Date().getFullYear();
 
 //Set HTML elements
