@@ -111,6 +111,7 @@ p {
         <input id="brushSize" type="number" autocomplete="off" style='font-size: 1em; max-width: 100px;'/>
         <a id="brushSizeError">*</a>
     </div>
+    <div class="break"></div>
     <div class="inputField">
         <label for="timerLengthMinutes">Test Length (Minutes):</label>
         <input id="timerLengthMinutes" type="number" autocomplete="off" style='font-size: 1em; max-width: 100px;'/>
@@ -128,6 +129,7 @@ p {
             <option value="stylus">Stylus</option> 
         </select>
     </div>
+    <div class="break"></div>
     <div class="inputField">
         <label for="practiceScore">Practice Scoring:</label>
         <select id="practiceScore" style='font-size: 1em;'>
@@ -143,6 +145,7 @@ p {
             <option value="true">Enabled</option>
         </select>
     </div>
+    <div class="break"></div>
     <div class="inputField">
         <label for="practiceTimerLengthMinutes" id="practiceLengthMinutesLabel">Practice Length (Minutes):</label>
         <input id="practiceTimerLengthMinutes" type="number" autocomplete="off" style='font-size: 1em; max-width: 100px;'/>
@@ -160,10 +163,12 @@ p {
         <label for="adminPassword">Admin Password:</label>
         <input id="adminPassword" type="password" required autocomplete="off" style='font-size: 1em;'/>
     </div>
+ <div class="break"></div>
     <div class="inputField">
         <label for="proctorPassword">New Proctor Password:</label>
         <input id="proctorPassword" type="text" required autocomplete="off" style='font-size: 1em;'/>
     </div>
+        <div class="break"></div>
     <button id="submit" style='font-size: 1em; width: fit-content;' onclick="changePassword()">Change Password</button>
     <h6 id="status" style="display: none;">Proctor Password Set</h6>
 </div>
