@@ -66,7 +66,7 @@ const TIME_FORMAT = new Intl.NumberFormat('en-US', {
 
 const DRAW_W_FINGER = !IS_TEST && JSON.parse(localStorage.practiceDrawMode) == "finger"; //Draw with finger only if in practice mode and the setting is selected
 const ERASE_COLOR = "#FFFFFF";
-const DRAW_COLOR = IS_TEST ? "#FFE500" : "#808080"; //Test Color : Practice Color
+const DRAW_COLOR = IS_TEST ? "#808080" : "#808080"; //Test Color : Practice Color
 
 //DO NOT CHANGE - STANDARDIZES TEST RESULTS
 const AVG_Y = (SELECTED_FIGURE.minY+SELECTED_FIGURE.maxY)/2;
