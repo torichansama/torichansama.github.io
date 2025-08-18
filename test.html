@@ -233,10 +233,10 @@ function setBrush(color) {
     }
 
     active.style.outline = "2px solid black";
-    inactive.style.backgroundColor = "#FFFFFF";
-
-    inactive.style.outline = "4px solid black";
+    inactive.style.outline = "4px outset black";
+    
     active.style.backgroundColor = "#adacac";
+    inactive.style.backgroundColor = "#FFFFFF";
 }
 setBrush(DRAW_COLOR); //Initialize to brush instead of eraser
 
