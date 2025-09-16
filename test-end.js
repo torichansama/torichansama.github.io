@@ -76,7 +76,9 @@ function scoreFigure() {
         drawCtx.lineWidth = stroke.brushSize*2*drawToScoreScale;
 
         if (stroke.x.length == 1) { //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
+            console.log(stroke.brushSize*drawToScoreScale);
             circle(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2), stroke.brushSize*drawToScoreScale, true, drawCtx);
+            // circle(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2), 100, true, drawCtx);
             return;
         }
 
@@ -137,7 +139,7 @@ function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
 function saveScore(imgData) {
     drawCtx.putImageData(imgData, 0, 0);
 
-    if (FIND_MAX_SCORE) { //Alert the max score
+    if (FIND_MAX_SCORE || SCORE_DEBUG) { //Alert the max score
         alert(scoreInc);
     }
     
