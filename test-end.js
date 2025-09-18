@@ -96,65 +96,90 @@ function scoreFigure() {
 }
 
 function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
-    let i = startingOffset;
-    while (i < startingOffset+imgData.data.length/8) { //WARNING! This divisor MUST be a multiple of 4 to prevent erronous scoring
-        if (imgData.data[i] == 0 && !FIND_MAX_SCORE) { //Skip blank pixels
-            i += 4;
-            continue;
-        }
+    // imgData already contains the rasterized user drawing
+    const drawData = imgData.data;
 
-        let x = (i / 4) % SCORE_AREA_SIZE - SCORE_AREA_SIZE/2;
-        let y = Math.floor((i / 4) / SCORE_AREA_SIZE) - SCORE_AREA_SIZE/2 - AVG_Y*figureScale;
-        let theta = -Math.atan2(y, x);
-        let pixelR = Math.hypot(x, y);
-        let figureCoords = getCoordsFromFigure(theta, figureScale, 0, -AVG_Y*figureScale);
-        let innerR = Math.hypot(figureCoords.innerX, -figureCoords.innerY);
-        let outerR = Math.hypot(figureCoords.outerX, -figureCoords.outerY);
+    // build a clean figure mask at the same center and scale
+    const figCanvas = document.createElement("canvas");
+    figCanvas.width = SCORE_AREA_SIZE;
+    figCanvas.height = SCORE_AREA_SIZE;
+    const figCtx = figCanvas.getContext("2d", { willReadFrequently: false });
+    figCtx.imageSmoothingEnabled = false;
 
-        if (pixelR >= innerR && pixelR <= outerR) {
-            imgData.data[i+1] = 255;
-            imgData.data[i+3] = 255;
-            scoreInc++;
-        } else if (!FIND_MAX_SCORE){
-            imgData.data[i+2] = 255;
-            imgData.data[i+3] = 255;
-            scoreInc--;
-        }
-        if (pixelR < 30 && SCORE_DEBUG) { //Show 0,0
-            imgData.data[i+2] = 255;
-            imgData.data[i+3] = 255;
-        }
-        i += 4;
+    const minAngle = SELECTED_FIGURE.minTheta;
+    const maxAngle = SELECTED_FIGURE.maxTheta;
+    const thetaInc = (maxAngle - minAngle) / THETA_RESOLUTION_HIGH_LOD;
+
+    const innerPath = new Path2D();
+    const outerPath = new Path2D();
+
+    let r = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE / 2, SCORE_AREA_SIZE / 2);
+    innerPath.moveTo(r.innerX, r.innerY);
+    outerPath.moveTo(r.outerX, r.outerY);
+
+    for (let t = minAngle + thetaInc; t <= maxAngle + 1e-3; t += thetaInc) {
+        r = getCoordsFromFigure(t, figureScale, SCORE_AREA_SIZE / 2, SCORE_AREA_SIZE / 2);
+        innerPath.lineTo(r.innerX, r.innerY);
+        outerPath.lineTo(r.outerX, r.outerY);
     }
 
-    progressBar.value = i/imgData.data.length;
+    // fill outer ring then punch inner hole to create band
+    figCtx.fillStyle = "#fff";
+    figCtx.globalCompositeOperation = "source-over";
+    figCtx.fill(outerPath);
+    figCtx.globalCompositeOperation = "destination-out";
+    figCtx.fill(innerPath);
 
-    if (i < imgData.data.length) {
-        setTimeout(()=>{mainScoreLoop(i, imgData, figureScale, progressBar)}, 0);
-    } else {
-        saveScore(imgData);
+    const figData = figCtx.getImageData(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE).data;
+
+    let A_fig = 0;
+    let A_in = 0;
+    let A_out = 0;
+
+    // count by alpha
+    for (let i = 0; i < figData.length; i += 4) {
+        const figOn = figData[i + 3] > 0;
+        const drawn = drawData[i + 3] > 0;
+
+        if (figOn) A_fig++;
+        if (drawn && figOn) A_in++;
+        if (drawn && !figOn) A_out++;
     }
+
+    // publish for saveScore
+    window._areaMode = true;
+    window._figureArea = A_fig;
+    scoreInc = A_in - A_out;
+
+    if (progressBar) progressBar.value = 1;
+
+    saveScore(imgData);
 }
 
 function saveScore(imgData) {
     drawCtx.putImageData(imgData, 0, 0);
 
-    if (FIND_MAX_SCORE || SCORE_DEBUG) { //Alert the max score
+    if (FIND_MAX_SCORE || SCORE_DEBUG) {
         alert(scoreInc);
     }
-    
-    //Publish score to sessionStorage
-    let score = Math.round(scoreInc/SELECTED_FIGURE.maxScore*100*10000)/10000 //Round to 4 decimal places
-    if (score < 0) {
-        score = "NEGATIVE VALUE";
+
+    let ratio;
+    if (window._areaMode && typeof window._figureArea === "number" && window._figureArea > 0) {
+        // strict area normalization
+        ratio = scoreInc / window._figureArea;
     } else {
-        let scoreFormat = new Intl.NumberFormat('en-US', { 
-            minimumIntegerDigits: 1, 
-            minimumFractionDigits: 4 //Guaruntees 4 decimal places
-        });
-        score = scoreFormat.format(score)+"%";
+        // legacy fallback if area mode not set
+        ratio = scoreInc / SELECTED_FIGURE.maxScore;
     }
-    sessionStorage.scoreObject = JSON.stringify(score); //Stores drawing score in the session storages
+
+    // allow true negatives if outside area exceeds inside
+    const percent = Math.round(ratio * 100 * 10000) / 10000;
+    const formatted = new Intl.NumberFormat("en-US", {
+        minimumIntegerDigits: 1,
+        minimumFractionDigits: 4
+    }).format(percent) + "%";
+
+    sessionStorage.scoreObject = JSON.stringify(formatted);
 
     if (SCORE_DEBUG) return;
 
