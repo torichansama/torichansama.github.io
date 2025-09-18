@@ -151,16 +151,16 @@ function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
   const data = imgData.data;
   const W = SCORE_AREA_SIZE, H = SCORE_AREA_SIZE;
 
-  // Exact denominator
+  // exact denominator
   const A_fig_exact = figureAreaAnalytic(figureScale);
 
-  // Collect drawn pixels once (fractional alpha)
+  // collect drawn pixels
   const drawn = [];
   for (let i = 0; i < data.length; i += 4) {
     const a = data[i + 3] / 255;
     if (a === 0) continue;
-    const px = (i / 4) % W;
-    const py = Math.floor((i / 4) / W);
+    const px = (i >> 2) % W;
+    const py = ((i >> 2) / W) | 0;
     drawn.push({ px, py, a });
   }
 
@@ -171,20 +171,25 @@ function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
     return saveScore(imgData);
   }
 
-  // Expected vertical shift from original scorer
+  // -------- SPEED FIX: sample at most N points --------
+  const MAX_SAMPLES = 10000;
+  if (drawn.length > MAX_SAMPLES) {
+    // reservoir sample without allocations
+    const step = Math.max(1, Math.floor(drawn.length / MAX_SAMPLES));
+    const sampled = [];
+    for (let i = 0; i < drawn.length; i += step) sampled.push(drawn[i]);
+    drawn.length = 0;
+    Array.prototype.push.apply(drawn, sampled);
+  }
+
+  // expected vertical shift
   const baseY = AVG_Y * figureScale;
 
-  // Search small XY offsets to align frames (cancels any residual misplacement)
-  const search = { dxMin: -6, dxMax: 6, dyMin: -12, dyMax: 12, step: 1 };
-
-  function scoreWithOffset(dx, dy) {
+  function scoreWithDy(dy) {
     let Ain = 0, Aout = 0;
-
     for (let k = 0; k < drawn.length; k++) {
       const a = drawn[k].a;
-
-      // Center at canvas middle and apply test offsets
-      const x = drawn[k].px - W / 2 - dx;
+      const x = drawn[k].px - W / 2;          // horizontal aligned at center
       const y = drawn[k].py - H / 2 - (baseY + dy);
 
       let theta = -Math.atan2(y, x);
@@ -192,7 +197,6 @@ function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
         Aout += a;
         continue;
       }
-
       const r = Math.hypot(x, y);
       const eq = SELECTED_FIGURE.calcRad(theta);
       const rIn = eq.inner * figureScale;
@@ -200,33 +204,31 @@ function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
 
       if (r >= rIn && r <= rOut) Ain += a; else Aout += a;
     }
-
     return { Ain, Aout, score: Ain - Aout };
   }
 
-  // Coarse grid search
-  let best = { dx: 0, dy: 0, Ain: 0, Aout: 0, score: -Infinity };
-  for (let dy = search.dyMin; dy <= search.dyMax; dy += search.step) {
-    for (let dx = search.dxMin; dx <= search.dxMax; dx += search.step) {
-      const s = scoreWithOffset(dx, dy);
-      if (s.score > best.score) best = { dx, dy, Ain: s.Ain, Aout: s.Aout, score: s.score };
-    }
+  // -------- fast coarse search on dy only --------
+  let best = { dy: 0, Ain: 0, Aout: 0, score: -Infinity };
+
+  for (let dy = -12; dy <= 12; dy += 1) {
+    const s = scoreWithDy(dy);
+    if (s.score > best.score) best = { dy, Ain: s.Ain, Aout: s.Aout, score: s.score };
   }
 
-  // Fine search around best
-  for (let dy = best.dy - 1; dy <= best.dy + 1; dy += 0.25) {
-    for (let dx = best.dx - 1; dx <= best.dx + 1; dx += 0.25) {
-      const s = scoreWithOffset(dx, dy);
-      if (s.score > best.score) best = { dx, dy, Ain: s.Ain, Aout: s.Aout, score: s.score };
-    }
+  // -------- tiny refinement around best --------
+  for (let dy = best.dy - 0.75; dy <= best.dy + 0.75; dy += 0.25) {
+    const s = scoreWithDy(dy);
+    if (s.score > best.score) best = { dy, Ain: s.Ain, Aout: s.Aout, score: s.score };
   }
 
+  // publish
   scoreInc = best.Ain - best.Aout;
   window._figureAreaExact = A_fig_exact;
 
   if (progressBar) progressBar.value = 1;
   saveScore(imgData);
 }
+
 
 // -----------------------------
 // Save + navigate (kept compatible)
