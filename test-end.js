@@ -157,35 +157,28 @@ function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
 }
 
 function saveScore(imgData) {
-    drawCtx.putImageData(imgData, 0, 0);
+  drawCtx.putImageData(imgData, 0, 0);
 
-    if (FIND_MAX_SCORE || SCORE_DEBUG) {
-        alert(scoreInc);
-    }
+  if (FIND_MAX_SCORE || SCORE_DEBUG) alert(scoreInc);
 
-    let ratio;
-    if (window._areaMode && typeof window._figureArea === "number" && window._figureArea > 0) {
-        // strict area normalization
-        ratio = scoreInc / window._figureArea;
-    } else {
-        // legacy fallback if area mode not set
-        ratio = scoreInc / SELECTED_FIGURE.maxScore;
-    }
+  let ratio;
+  if (window._areaMode && window._figureArea > 0) ratio = scoreInc / window._figureArea;
+  else ratio = scoreInc / SELECTED_FIGURE.maxScore;
 
-    // allow true negatives if outside area exceeds inside
-    const percent = Math.round(ratio * 100 * 10000) / 10000;
-    const formatted = new Intl.NumberFormat("en-US", {
-        minimumIntegerDigits: 1,
-        minimumFractionDigits: 4
-    }).format(percent) + "%";
+  const percent = Math.round(ratio * 100 * 10000) / 10000;
 
-    sessionStorage.scoreObject = JSON.stringify(formatted);
+  const fmt = new Intl.NumberFormat("en-US", {
+    minimumIntegerDigits: 1,
+    minimumFractionDigits: 4
+  }).format(percent) + "%";
 
-    if (SCORE_DEBUG) return;
+  // show two lines when negative
+  const out = (percent < 0) ? ("NEGATIVE VALUE<br>" + fmt) : fmt;
 
-    if (IS_TEST) {
-        location.href = "testEnd_auth.html";
-    } else {
-        location.href = "testPracticeEnd.html";
-    }
+  sessionStorage.scoreObject = JSON.stringify(out);
+
+  if (SCORE_DEBUG) return;
+
+  if (IS_TEST) location.href = "testEnd_auth.html";
+  else location.href = "testPracticeEnd.html";
 }
