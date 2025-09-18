@@ -124,6 +124,13 @@ function figureCtxRedraw () {
 
     figureCtx.stroke(innerPath);
     figureCtx.stroke(outerPath);
+
+    // live scoring update
+if (typeof LIVE_SCORING !== "undefined" && LIVE_SCORING) {
+  const fs = computeFigureScale();
+  liveScoreThrottled(fs);
+}
+
 }
 
 function getCoordsFromFigure(theta, scale, screenOffsetX, screenOffsetY) {
