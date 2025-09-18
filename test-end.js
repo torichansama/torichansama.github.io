@@ -16,38 +16,42 @@ function figureAreaAnalytic(figureScale) {
   return s * h; // pixel squared in the scoring canvas
 }
 
-function buildFigureMask(figureScale, thetaRes) {
-  const c = document.createElement("canvas");
-  c.width = SCORE_AREA_SIZE;
-  c.height = SCORE_AREA_SIZE;
-  const ctx = c.getContext("2d", { willReadFrequently: false });
-  ctx.imageSmoothingEnabled = false;
+function buildFigureMask(figureScale) {
+  const W = SCORE_AREA_SIZE, H = SCORE_AREA_SIZE;
+  const data = new Uint8ClampedArray(W * H * 4);
 
   const a = SELECTED_FIGURE.minTheta;
   const b = SELECTED_FIGURE.maxTheta;
-  const dt = (b - a) / thetaRes;
 
-  const inner = new Path2D();
-  const outer = new Path2D();
+  const xC = W / 2;
+  const yC = H / 2 + 0;                    // screen center
+  const yShift = AVG_Y * figureScale;      // match original scorer
 
-  let r = getCoordsFromFigure(a, figureScale, SCORE_AREA_SIZE / 2, SCORE_AREA_SIZE / 2);
-  inner.moveTo(r.innerX, r.innerY);
-  outer.moveTo(r.outerX, r.outerY);
+  const tol = 0.5; // pixel tolerance
 
-  for (let t = a + dt; t <= b + 1e-6; t += dt) {
-    r = getCoordsFromFigure(t, figureScale, SCORE_AREA_SIZE / 2, SCORE_AREA_SIZE / 2);
-    inner.lineTo(r.innerX, r.innerY);
-    outer.lineTo(r.outerX, r.outerY);
+  let p = 0;
+  for (let y = 0; y < H; y++) {
+    const yy = y - yC - yShift;
+    for (let x = 0; x < W; x++) {
+      const xx = x - xC;
+
+      let theta = -Math.atan2(yy, xx);
+      if (theta >= a && theta <= b) {
+        const r = Math.hypot(xx, yy);
+        const eq = SELECTED_FIGURE.calcRad(theta);
+        const innerR = eq.inner * figureScale;
+        const outerR = eq.outer * figureScale;
+
+        if (r >= innerR - tol && r <= outerR + tol) {
+          data[p + 3] = 255;               // alpha on
+        }
+      }
+      p += 4;
+    }
   }
-
-  ctx.fillStyle = "#fff";
-  ctx.globalCompositeOperation = "source-over";
-  ctx.fill(outer);
-  ctx.globalCompositeOperation = "destination-out";
-  ctx.fill(inner);
-
-  return ctx.getImageData(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE).data;
+  return data;
 }
+
 
 
 function promptSessionEnd() {
@@ -150,24 +154,19 @@ function scoreFigure() {
 function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
   const drawData = imgData.data;
 
-  // exact denominator from analytic integral
+  const figData = buildFigureMask(figureScale);
   const A_fig_exact = figureAreaAnalytic(figureScale);
 
-  // figure mask in the SAME scoring canvas space as the strokes
-  // centerX = SCORE_AREA_SIZE/2, centerY = SCORE_AREA_SIZE/2 are already used inside buildFigureMask via getCoordsFromFigure
-  const figData = buildFigureMask(figureScale, THETA_RESOLUTION_HIGH_LOD * 2); // finer mask for accuracy
-
-  // fractional coverage accumulation
   let A_in = 0;
   let A_out = 0;
 
   for (let i = 0; i < figData.length; i += 4) {
-    const f = figData[i + 3] / 255;   // figure coverage in this pixel
-    const d = drawData[i + 3] / 255;  // drawn coverage in this pixel
-    if (d === 0) continue;            // skip when user drew nothing here
+    const f = figData[i + 3] / 255;
+    const d = drawData[i + 3] / 255;
+    if (d === 0) continue;
 
-    A_in  += d * f;        // drawn inside the band
-    A_out += d * (1 - f);  // drawn outside the band
+    A_in  += d * f;
+    A_out += d * (1 - f);
   }
 
   scoreInc = A_in - A_out;
