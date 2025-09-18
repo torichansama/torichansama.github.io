@@ -1,3 +1,55 @@
+function figureAreaAnalytic(figureScale) {
+  const a = SELECTED_FIGURE.minTheta;
+  const b = SELECTED_FIGURE.maxTheta;
+  const n = 4096; // even
+  const h = (b - a) / n;
+  let s = 0;
+  for (let i = 0; i <= n; i++) {
+    const t = a + i * h;
+    const eq = SELECTED_FIGURE.calcRad(t);
+    const ro = eq.outer * figureScale;
+    const ri = eq.inner * figureScale;
+    const f = 0.5 * (ro * ro - ri * ri);
+    const w = (i === 0 || i === n) ? 1 : (i % 2 === 0 ? 2 : 4);
+    s += w * f;
+  }
+  return s * h; // pixel squared in the scoring canvas
+}
+
+function buildFigureMask(figureScale, thetaRes) {
+  const c = document.createElement("canvas");
+  c.width = SCORE_AREA_SIZE;
+  c.height = SCORE_AREA_SIZE;
+  const ctx = c.getContext("2d", { willReadFrequently: false });
+  ctx.imageSmoothingEnabled = false;
+
+  const a = SELECTED_FIGURE.minTheta;
+  const b = SELECTED_FIGURE.maxTheta;
+  const dt = (b - a) / thetaRes;
+
+  const inner = new Path2D();
+  const outer = new Path2D();
+
+  let r = getCoordsFromFigure(a, figureScale, SCORE_AREA_SIZE / 2, SCORE_AREA_SIZE / 2);
+  inner.moveTo(r.innerX, r.innerY);
+  outer.moveTo(r.outerX, r.outerY);
+
+  for (let t = a + dt; t <= b + 1e-6; t += dt) {
+    r = getCoordsFromFigure(t, figureScale, SCORE_AREA_SIZE / 2, SCORE_AREA_SIZE / 2);
+    inner.lineTo(r.innerX, r.innerY);
+    outer.lineTo(r.outerX, r.outerY);
+  }
+
+  ctx.fillStyle = "#fff";
+  ctx.globalCompositeOperation = "source-over";
+  ctx.fill(outer);
+  ctx.globalCompositeOperation = "destination-out";
+  ctx.fill(inner);
+
+  return ctx.getImageData(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE).data;
+}
+
+
 function promptSessionEnd() {
     if (IS_TEST) {
         activatePrompt(endTestEarly);
@@ -95,98 +147,87 @@ function scoreFigure() {
     mainScoreLoop(0, imgData, figureScale, progressBar);
 }
 
-
 function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
-    // imgData already contains the rasterized user drawing
-    const drawData = imgData.data;
+  // fractional coverage counting
+  const drawData = imgData.data;
 
-    // build a clean figure mask at the same center and scale
-    const figCanvas = document.createElement("canvas");
-    figCanvas.width = SCORE_AREA_SIZE;
-    figCanvas.height = SCORE_AREA_SIZE;
-    const figCtx = figCanvas.getContext("2d", { willReadFrequently: false });
-    figCtx.imageSmoothingEnabled = false;
+  // figure area is analytic to remove denominator error
+  const A_fig_exact = figureAreaAnalytic(figureScale);
 
-    const minAngle = SELECTED_FIGURE.minTheta;
-    const maxAngle = SELECTED_FIGURE.maxTheta;
-    const thetaInc = (maxAngle - minAngle) / THETA_RESOLUTION_HIGH_LOD;
+  // figure masks at two angular resolutions to estimate discretization error
+  const thetaRes1 = THETA_RESOLUTION_HIGH_LOD;
+  const thetaRes2 = THETA_RESOLUTION_HIGH_LOD * 2;
 
-    const innerPath = new Path2D();
-    const outerPath = new Path2D();
+  const fig1 = buildFigureMask(figureScale, thetaRes1);
+  const fig2 = buildFigureMask(figureScale, thetaRes2);
 
-    let r = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE / 2, SCORE_AREA_SIZE / 2);
-    innerPath.moveTo(r.innerX, r.innerY);
-    outerPath.moveTo(r.outerX, r.outerY);
-
-    for (let t = minAngle + thetaInc; t <= maxAngle + 1e-3; t += thetaInc) {
-        r = getCoordsFromFigure(t, figureScale, SCORE_AREA_SIZE / 2, SCORE_AREA_SIZE / 2);
-        innerPath.lineTo(r.innerX, r.innerY);
-        outerPath.lineTo(r.outerX, r.outerY);
-    }
-
-    // fill outer ring then punch inner hole to create band
-    figCtx.fillStyle = "#fff";
-    figCtx.globalCompositeOperation = "source-over";
-    figCtx.fill(outerPath);
-    figCtx.globalCompositeOperation = "destination-out";
-    figCtx.fill(innerPath);
-
-    const figData = figCtx.getImageData(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE).data;
-
-    let A_fig = 0;
+  function scoreWithMask(figData) {
     let A_in = 0;
     let A_out = 0;
 
-    // count by alpha
     for (let i = 0; i < figData.length; i += 4) {
-        const figOn = figData[i + 3] > 0;
-        const drawn = drawData[i + 3] > 0;
+      const f = figData[i + 3] / 255;   // figure coverage in pixel
+      const d = drawData[i + 3] / 255;  // drawing coverage in pixel
 
-        if (figOn) A_fig++;
-        if (drawn && figOn) A_in++;
-        if (drawn && !figOn) A_out++;
+      A_in  += d * f;        // drawn inside
+      A_out += d * (1 - f);  // drawn outside
     }
 
-    // publish for saveScore
-    window._areaMode = true;
-    window._figureArea = A_fig;
-    scoreInc = A_in - A_out;
+    const ratio = (A_in - A_out) / A_fig_exact;
+    return { A_in, A_out, ratio };
+  }
 
-    if (progressBar) progressBar.value = 1;
+  const s1 = scoreWithMask(fig1);
+  const s2 = scoreWithMask(fig2);
 
-    saveScore(imgData);
+  // publish the best estimate and a conservative margin from refinement
+  const ratio = s2.ratio;                         // finer angular resolution estimate
+  const moe_disc = Math.abs(s2.ratio - s1.ratio); // deterministic discretization margin
+
+  // keep old pipeline variables alive
+  scoreInc = s2.A_in - s2.A_out;
+  window._areaMode = true;
+  window._figureAreaExact = A_fig_exact;
+  window._moe_disc = moe_disc;
+
+  if (progressBar) progressBar.value = 1;
+
+  saveScore(imgData);
 }
 
 function saveScore(imgData) {
-    drawCtx.putImageData(imgData, 0, 0);
+  drawCtx.putImageData(imgData, 0, 0);
 
-    if (FIND_MAX_SCORE || SCORE_DEBUG) {
-        alert(scoreInc);
-    }
+  // compute final percent and margin in percent units
+  let ratio;
+  if (window._areaMode && typeof window._figureAreaExact === "number") {
+    ratio = (scoreInc) / window._figureAreaExact;
+  } else {
+    ratio = scoreInc / SELECTED_FIGURE.maxScore;
+  }
 
-    let ratio;
-    if (window._areaMode && typeof window._figureArea === "number" && window._figureArea > 0) {
-        // strict area normalization
-        ratio = scoreInc / window._figureArea;
-    } else {
-        // legacy fallback if area mode not set
-        ratio = scoreInc / SELECTED_FIGURE.maxScore;
-    }
+  const percent = ratio * 100;
+  const formatted = new Intl.NumberFormat("en-US", {
+    minimumIntegerDigits: 1,
+    minimumFractionDigits: 5
+  }).format(percent) + "%";
 
-    // allow true negatives if outside area exceeds inside
-    const percent = Math.round(ratio * 100 * 10000) / 10000;
-    const formatted = new Intl.NumberFormat("en-US", {
-        minimumIntegerDigits: 1,
-        minimumFractionDigits: 4
-    }).format(percent) + "%";
+  // margin from angular discretization refinement
+  const moePercent = (Math.abs(window._moe_disc || 0) * 100);
+  const moeFormatted = new Intl.NumberFormat("en-US", {
+    minimumIntegerDigits: 1,
+    minimumFractionDigits: 5
+  }).format(moePercent) + "%";
 
-    sessionStorage.scoreObject = JSON.stringify(formatted);
+  // store both score and margin
+  sessionStorage.scoreObject = JSON.stringify(formatted);
+  sessionStorage.scoreMargin = JSON.stringify(moeFormatted);
 
-    if (SCORE_DEBUG) return;
+  if (SCORE_DEBUG) return;
 
-    if (IS_TEST) {
-        location.href = "testEnd_auth.html";
-    } else {
-        location.href = "testPracticeEnd.html";
-    }
+  if (IS_TEST) {
+    location.href = "testEnd_auth.html";
+  } else {
+    location.href = "testPracticeEnd.html";
+  }
 }
