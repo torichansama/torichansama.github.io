@@ -21,79 +21,57 @@ function endTest() {
 var scoreInc = 0;
 
 function scoreFigure() {
-    let progressBar = document.getElementById("progress");
+    let insideCount = 0;
+    let outsideCount = 0;
+    let totalCount = 0;
 
-    drawCanvas.style.width = `${SCORE_AREA_SIZE}px`;
-    drawCanvas.style.height = `${SCORE_AREA_SIZE}px`;
-    drawCanvas.width = SCORE_AREA_SIZE; 
-    drawCanvas.height = SCORE_AREA_SIZE;
+    // Adjust scaling and centering for your project
+    let figureScale = ...; // Set this appropriately
+    let centerX = ...; // Typically drawCanvas.width / 2
+    let centerY = ...; // Typically drawCanvas.height / 2
 
-    drawCtx.clearRect(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE); //Should be wiped by canvas resize but cant be too safe
+    for (let stroke of strokes) {
+        for (let i = 0; i < stroke.x.length; i++) {
+            let x = stroke.x[i];
+            let y = stroke.y[i];
 
-    let yScale = (SCORE_AREA_SIZE/2-500)/(SELECTED_FIGURE.maxY-AVG_Y);
-    let xScale = (SCORE_AREA_SIZE/2-500)/(SELECTED_FIGURE.width/2);
-    let figureScale = Math.min(xScale, yScale); //Scale of figure in scoring mode
-    let drawToScoreScale = figureScale/SCALE; //Realtive size of scoring figure compared to drawing figure
+            // Apply centering/scaling if needed
+            let relX = x - centerX;
+            let relY = y - centerY;
 
-    if (!SCORE_DEBUG) {drawCanvas.style.display = "none";}
-    else {
-        let minAngle = SELECTED_FIGURE.minTheta;
-        let maxAngle = SELECTED_FIGURE.maxTheta;
+            let r = Math.hypot(relX, relY);
+            let theta = Math.atan2(relY, relX);
 
-        drawCtx.strokeStyle = "black";
-        
-        let thetaInc = (maxAngle-minAngle)/THETA_RESOLUTION_HIGH_LOD;
+            let figureCoords = getCoordsFromFigure(theta, figureScale, 0, 0);
+            let innerR = Math.hypot(figureCoords.innerX, figureCoords.innerY);
+            let outerR = Math.hypot(figureCoords.outerX, figureCoords.outerY);
 
-        let innerPath = new Path2D();
-        let outerPath = new Path2D();
-
-        let rads = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
-        innerPath.moveTo(rads.innerX, rads.innerY);
-        outerPath.moveTo(rads.outerX, rads.outerY);
-
-        for (let theta = minAngle+thetaInc; theta <= maxAngle+0.01; theta += thetaInc) {
-            let rads = getCoordsFromFigure(theta, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
-            innerPath.lineTo(rads.innerX, rads.innerY);
-            outerPath.lineTo(rads.outerX, rads.outerY);
+            if (r >= innerR && r <= outerR) {
+                insideCount++;
+            } else {
+                outsideCount++;
+            }
+            totalCount++;
         }
-
-        drawCtx.stroke(innerPath);
-        drawCtx.stroke(outerPath);
     }
 
-    //Drawing strokes using one continuous line
-    drawCtx.strokeStyle = "red";
-    drawCtx.fillStyle = "red";
-    drawCtx.lineCap = "round";
-    drawCtx.lineJoin = "round";
+    let score = 0;
+    if (totalCount > 0) {
+        score = (insideCount - outsideCount) / totalCount;
+    }
 
-    strokes.forEach(stroke => {
-        if (stroke.strokeColor == DRAW_COLOR) {
-            drawCtx.globalCompositeOperation = "source-over";
-        } else {
-            drawCtx.globalCompositeOperation = "destination-out";
-        }
-        drawCtx.lineWidth = stroke.brushSize*2*drawToScoreScale;
+    // Save or display score as percentage, 4 decimal places
+    let scorePercent = (score * 100).toFixed(4) + "%";
+    sessionStorage.scoreObject = JSON.stringify(scorePercent);
 
-        if (stroke.x.length == 1) { //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
-            console.log(stroke.brushSize*drawToScoreScale);
-            circle(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2), stroke.brushSize*drawToScoreScale, true, drawCtx);
-            // circle(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2), 100, true, drawCtx);
-            return;
-        }
-
-        drawCtx.beginPath();
-        drawCtx.moveTo(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2))
-        for (let i = 0; i < stroke.x.length; i++) {
-            drawCtx.lineTo(Math.round(stroke.x[i]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[i]*drawToScoreScale+SCORE_AREA_SIZE/2));
-            drawCtx.stroke();
-        }
-    });
-
-    //Score strokes against figure 
-    let imgData = drawCtx.getImageData(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE);
-    mainScoreLoop(0, imgData, figureScale, progressBar);
+    // Route to next page as before
+    if (IS_TEST) {
+        location.href = "testEnd_auth.html";
+    } else {
+        location.href = "testPracticeEnd.html";
+    }
 }
+
 
 function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
     let i = startingOffset;
