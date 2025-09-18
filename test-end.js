@@ -103,38 +103,42 @@ function scoreFigure() {
   drawCanvas.width = SCORE_AREA_SIZE;
   drawCanvas.height = SCORE_AREA_SIZE;
 
+  // Should be wiped by canvas resize but cant be too safe
   drawCtx.clearRect(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE);
 
-  let yScale = (SCORE_AREA_SIZE/2-500)/(SELECTED_FIGURE.maxY-AVG_Y);
-  let xScale = (SCORE_AREA_SIZE/2-500)/(SELECTED_FIGURE.width/2);
-  let figureScale = Math.min(xScale, yScale);
-  let drawToScoreScale = figureScale/SCALE;
+  let yScale = (SCORE_AREA_SIZE / 2 - 500) / (SELECTED_FIGURE.maxY - AVG_Y);
+  let xScale = (SCORE_AREA_SIZE / 2 - 500) / (SELECTED_FIGURE.width / 2);
+  let figureScale = Math.min(xScale, yScale); // Scale of figure in scoring mode
+  let drawToScoreScale = figureScale / SCALE; // Relative size of scoring figure compared to drawing figure
 
-  if (!SCORE_DEBUG) { drawCanvas.style.display = "none"; }
-  else {
+  if (!SCORE_DEBUG) {
+    drawCanvas.style.display = "none";
+  } else {
     let minAngle = SELECTED_FIGURE.minTheta;
     let maxAngle = SELECTED_FIGURE.maxTheta;
 
     drawCtx.strokeStyle = "black";
-    let thetaInc = (maxAngle - minAngle)/THETA_RESOLUTION_HIGH_LOD;
+
+    let thetaInc = (maxAngle - minAngle) / THETA_RESOLUTION_HIGH_LOD;
 
     let innerPath = new Path2D();
     let outerPath = new Path2D();
 
-    let rads = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
+    let rads = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE / 2, SCORE_AREA_SIZE / 2);
     innerPath.moveTo(rads.innerX, rads.innerY);
     outerPath.moveTo(rads.outerX, rads.outerY);
 
     for (let theta = minAngle + thetaInc; theta <= maxAngle + 0.01; theta += thetaInc) {
-      let rads2 = getCoordsFromFigure(theta, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
-      innerPath.lineTo(rads2.innerX, rads2.innerY);
-      outerPath.lineTo(rads2.outerX, rads2.outerY);
+      let rads = getCoordsFromFigure(theta, figureScale, SCORE_AREA_SIZE / 2, SCORE_AREA_SIZE / 2);
+      innerPath.lineTo(rads.innerX, rads.innerY);
+      outerPath.lineTo(rads.outerX, rads.outerY);
     }
 
     drawCtx.stroke(innerPath);
     drawCtx.stroke(outerPath);
   }
 
+  // Drawing strokes using one continuous line
   drawCtx.strokeStyle = "red";
   drawCtx.fillStyle = "red";
   drawCtx.lineCap = "round";
@@ -146,36 +150,41 @@ function scoreFigure() {
     } else {
       drawCtx.globalCompositeOperation = "destination-out";
     }
-    drawCtx.lineWidth = stroke.brushSize*2*drawToScoreScale;
+    drawCtx.lineWidth = stroke.brushSize * 2 * drawToScoreScale;
 
+    // Render single length strokes as circles since iOS does not render lines that end where they start
     if (stroke.x.length == 1) {
+      console.log(stroke.brushSize * drawToScoreScale);
       circle(
-        Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2),
-        Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2),
-        stroke.brushSize*drawToScoreScale,
+        Math.round(stroke.x[0] * drawToScoreScale + SCORE_AREA_SIZE / 2),
+        Math.round(stroke.y[0] * drawToScoreScale + SCORE_AREA_SIZE / 2),
+        stroke.brushSize * drawToScoreScale,
         true,
         drawCtx
       );
+      // circle(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2), 100, true, drawCtx);
       return;
     }
 
     drawCtx.beginPath();
     drawCtx.moveTo(
-      Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2),
-      Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2)
+      Math.round(stroke.x[0] * drawToScoreScale + SCORE_AREA_SIZE / 2),
+      Math.round(stroke.y[0] * drawToScoreScale + SCORE_AREA_SIZE / 2)
     );
     for (let i = 0; i < stroke.x.length; i++) {
       drawCtx.lineTo(
-        Math.round(stroke.x[i]*drawToScoreScale+SCORE_AREA_SIZE/2),
-        Math.round(stroke.y[i]*drawToScoreScale+SCORE_AREA_SIZE/2)
+        Math.round(stroke.x[i] * drawToScoreScale + SCORE_AREA_SIZE / 2),
+        Math.round(stroke.y[i] * drawToScoreScale + SCORE_AREA_SIZE / 2)
       );
       drawCtx.stroke();
     }
   });
 
+  // Score strokes against figure
   let imgData = drawCtx.getImageData(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE);
   mainScoreLoop(0, imgData, figureScale, progressBar);
 }
+
 
 function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
   const drawData = imgData.data;
