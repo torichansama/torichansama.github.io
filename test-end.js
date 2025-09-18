@@ -1,3 +1,11 @@
+// test-end.js
+
+// assumes the following globals already exist in your app:
+// SCORE_AREA_SIZE, SELECTED_FIGURE, AVG_Y, SCALE, THETA_RESOLUTION_HIGH_LOD,
+// strokes, DRAW_COLOR, drawCanvas, drawCtx, IS_TEST, SCORE_DEBUG,
+// activatePrompt, endTestEarly, endPracticeEarly, loading, zoomOut,
+// getCoordsFromFigure, circle
+
 // helpers
 const TAU = 2 * Math.PI;
 function unwrapSpan(a, b) {
@@ -6,7 +14,7 @@ function unwrapSpan(a, b) {
   return span;
 }
 
-// corrected analytic area using unwrapped span and positive h
+// corrected analytic area
 function figureAreaAnalytic(figureScale) {
   const a = SELECTED_FIGURE.minTheta;
   const b = SELECTED_FIGURE.maxTheta;
@@ -28,7 +36,7 @@ function figureAreaAnalytic(figureScale) {
   return Math.abs(s * h);
 }
 
-// corrected mask aligned to drawing center and same unwrap
+// corrected mask aligned with drawing center
 function buildFigureMask(figureScale) {
   const W = SCORE_AREA_SIZE, H = SCORE_AREA_SIZE;
   const data = new Uint8ClampedArray(W * H * 4);
@@ -38,7 +46,7 @@ function buildFigureMask(figureScale) {
   const span = unwrapSpan(a, b);
 
   const xC = W / 2;
-  const yC = H / 2;              // align with drawing center
+  const yC = H / 2;
   const tol = 0.5;
 
   let p = 0;
@@ -47,10 +55,7 @@ function buildFigureMask(figureScale) {
     for (let x = 0; x < W; x++) {
       const xx = x - xC;
 
-      // drawing uses -atan2(yy, xx)
       let theta = -Math.atan2(yy, xx);
-
-      // unwrap into [a, a + span]
       const rel = ((theta - a) % TAU + TAU) % TAU;
       if (rel <= span) {
         const r = Math.hypot(xx, yy);
@@ -68,7 +73,28 @@ function buildFigureMask(figureScale) {
   return data;
 }
 
-// unchanged draw logic, but kept here for clarity of center alignment
+function promptSessionEnd() {
+  if (IS_TEST) {
+    activatePrompt(endTestEarly);
+  } else {
+    activatePrompt(endPracticeEarly);
+  }
+}
+
+function endTest() {
+  zoomOut(false);
+
+  if (!SCORE_DEBUG) activatePrompt(loading);
+
+  if (typeof ENABLE_SCORING === "undefined" || ENABLE_SCORING) {
+    setTimeout(scoreFigure, 500);
+  } else {
+    location.href = "index.html";
+  }
+}
+
+var scoreInc = 0;
+
 function scoreFigure() {
   let progressBar = document.getElementById("progress");
 
@@ -82,26 +108,27 @@ function scoreFigure() {
   let yScale = (SCORE_AREA_SIZE/2-500)/(SELECTED_FIGURE.maxY-AVG_Y);
   let xScale = (SCORE_AREA_SIZE/2-500)/(SELECTED_FIGURE.width/2);
   let figureScale = Math.min(xScale, yScale);
-  let drawToScoreScale = figureScale / SCALE;
+  let drawToScoreScale = figureScale/SCALE;
 
   if (!SCORE_DEBUG) { drawCanvas.style.display = "none"; }
   else {
     let minAngle = SELECTED_FIGURE.minTheta;
     let maxAngle = SELECTED_FIGURE.maxTheta;
+
     drawCtx.strokeStyle = "black";
-    let thetaInc = (unwrapSpan(minAngle, maxAngle))/THETA_RESOLUTION_HIGH_LOD;
+    let thetaInc = (maxAngle - minAngle)/THETA_RESOLUTION_HIGH_LOD;
 
     let innerPath = new Path2D();
     let outerPath = new Path2D();
 
-    let rads0 = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
-    innerPath.moveTo(rads0.innerX, rads0.innerY);
-    outerPath.moveTo(rads0.outerX, rads0.outerY);
+    let rads = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
+    innerPath.moveTo(rads.innerX, rads.innerY);
+    outerPath.moveTo(rads.outerX, rads.outerY);
 
-    for (let theta = minAngle + thetaInc; theta <= minAngle + unwrapSpan(minAngle, maxAngle) + 1e-2; theta += thetaInc) {
-      let rads = getCoordsFromFigure(theta, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
-      innerPath.lineTo(rads.innerX, rads.innerY);
-      outerPath.lineTo(rads.outerX, rads.outerY);
+    for (let theta = minAngle + thetaInc; theta <= maxAngle + 0.01; theta += thetaInc) {
+      let rads2 = getCoordsFromFigure(theta, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
+      innerPath.lineTo(rads2.innerX, rads2.innerY);
+      outerPath.lineTo(rads2.outerX, rads2.outerY);
     }
 
     drawCtx.stroke(innerPath);
@@ -114,22 +141,34 @@ function scoreFigure() {
   drawCtx.lineJoin = "round";
 
   strokes.forEach(stroke => {
-    drawCtx.globalCompositeOperation = (stroke.strokeColor == DRAW_COLOR) ? "source-over" : "destination-out";
-    drawCtx.lineWidth = stroke.brushSize * 2 * drawToScoreScale;
+    if (stroke.strokeColor == DRAW_COLOR) {
+      drawCtx.globalCompositeOperation = "source-over";
+    } else {
+      drawCtx.globalCompositeOperation = "destination-out";
+    }
+    drawCtx.lineWidth = stroke.brushSize*2*drawToScoreScale;
 
     if (stroke.x.length == 1) {
-      circle(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2),
-             Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2),
-             stroke.brushSize*drawToScoreScale, true, drawCtx);
+      circle(
+        Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2),
+        Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2),
+        stroke.brushSize*drawToScoreScale,
+        true,
+        drawCtx
+      );
       return;
     }
 
     drawCtx.beginPath();
-    drawCtx.moveTo(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2),
-                   Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2));
+    drawCtx.moveTo(
+      Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2),
+      Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2)
+    );
     for (let i = 0; i < stroke.x.length; i++) {
-      drawCtx.lineTo(Math.round(stroke.x[i]*drawToScoreScale+SCORE_AREA_SIZE/2),
-                     Math.round(stroke.y[i]*drawToScoreScale+SCORE_AREA_SIZE/2));
+      drawCtx.lineTo(
+        Math.round(stroke.x[i]*drawToScoreScale+SCORE_AREA_SIZE/2),
+        Math.round(stroke.y[i]*drawToScoreScale+SCORE_AREA_SIZE/2)
+      );
       drawCtx.stroke();
     }
   });
@@ -166,9 +205,9 @@ function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
 function saveScore(imgData) {
   drawCtx.putImageData(imgData, 0, 0);
 
-  let denom = Number.isFinite(window._figureAreaExact) && window._figureAreaExact > 0
+  const denom = (typeof window._figureAreaExact === "number" && window._figureAreaExact > 0)
     ? window._figureAreaExact
-    : 1; // guard
+    : 1;
 
   const ratio = scoreInc / denom;
   const percent = ratio * 100;
