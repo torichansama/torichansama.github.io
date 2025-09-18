@@ -5,6 +5,25 @@
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
 <link rel="stylesheet" href="test_style.css">
 
+<style>
+  #liveScore {
+    position: fixed;
+    left: 50%;
+    bottom: calc(14px + env(safe-area-inset-bottom)); /* comfy on iOS too */
+    transform: translateX(-50%);
+    z-index: 2000;                /* above canvases/toolbar */
+    background: rgba(0,0,0,0.75); /* readable over drawing */
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-family: system-ui, sans-serif;
+    pointer-events: none;         /* never blocks touches */
+    min-width: 80px;
+    text-align: center;
+  }
+</style>
+
 <body>
 <!-- Canvas stack for background grid, drawing, and rendering the figure -->
 <canvas id="gridCanvas"></canvas>    
