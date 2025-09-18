@@ -18,6 +18,12 @@ function endTest() {
     }
 }
 
+function computeFigureScale() {
+  const yScale = (SCORE_AREA_SIZE/2 - 500) / (SELECTED_FIGURE.maxY - AVG_Y);
+  const xScale = (SCORE_AREA_SIZE/2 - 500) / (SELECTED_FIGURE.width / 2);
+  return Math.min(xScale, yScale);
+}
+
 var scoreInc = 0;
 
 function scoreFigure() {
