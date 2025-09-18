@@ -151,45 +151,44 @@ function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
   const data = imgData.data;
   const W = SCORE_AREA_SIZE, H = SCORE_AREA_SIZE;
 
-  // center that cancels the internal AVG_Y shift in getCoordsFromFigure
-  const xCenter = W / 2;
-  const yCenter = H / 2 - AVG_Y * figureScale;
-
-  // exact figure area by integration
+  // exact figure area by Simpson integration
   const a = SELECTED_FIGURE.minTheta, b = SELECTED_FIGURE.maxTheta;
-  const n = 4096;                 // even
+  const n = 4096;
   const h = (b - a) / n;
-  let accum = 0;
+  let s = 0;
   for (let i = 0; i <= n; i++) {
     const t = a + i * h;
     const eq = SELECTED_FIGURE.calcRad(t);
-    const ro = eq.outer * figureScale, ri = eq.inner * figureScale;
-    const band = 0.5 * (ro*ro - ri*ri);
-    accum += (i === 0 || i === n) ? band : (i % 2 === 0 ? 2*band : 4*band);
+    const ro = eq.outer * figureScale;
+    const ri = eq.inner * figureScale;
+    const band = 0.5 * (ro * ro - ri * ri);
+    s += (i === 0 || i === n) ? band : (i % 2 === 0 ? 2 * band : 4 * band);
   }
-  const A_fig_exact = accum * h;
+  const A_fig_exact = s * h;
 
-  // fractional area counts only where the user actually drew
-  let A_in = 0, A_out = 0;
-  for (let y = 0; y < H; y++) {
-    const yy = y - yCenter;
-    for (let x = 0; x < W; x++) {
-      const idx = (y * W + x) * 4;
-      const d = data[idx + 3] / 255;   // drawn coverage
-      if (d === 0) continue;
+  let A_in = 0;
+  let A_out = 0;
 
-      const xx = x - xCenter;
-      const theta = -Math.atan2(yy, xx);
-      if (theta < a || theta > b) { A_out += d; continue; }
+  for (let i = 0; i < data.length; i += 4) {
+    const alpha = data[i + 3] / 255;
+    if (alpha === 0) continue; // skip blank pixels
 
-      const r = Math.hypot(xx, yy);
-      const eq = SELECTED_FIGURE.calcRad(theta);
-      const innerR = eq.inner * figureScale;
-      const outerR = eq.outer * figureScale;
+    const x = (i / 4) % W - W / 2;
+    const y = Math.floor((i / 4) / W) - H / 2 - AVG_Y * figureScale; // match original scorer
 
-      if (r >= innerR && r <= outerR) A_in += d;
-      else A_out += d;
+    let theta = -Math.atan2(y, x);
+    if (theta < a || theta > b) {
+      A_out += alpha;
+      continue;
     }
+
+    const r = Math.hypot(x, y);
+    const eq = SELECTED_FIGURE.calcRad(theta);
+    const innerR = eq.inner * figureScale;
+    const outerR = eq.outer * figureScale;
+
+    if (r >= innerR && r <= outerR) A_in += alpha;
+    else A_out += alpha;
   }
 
   scoreInc = A_in - A_out;
@@ -199,15 +198,16 @@ function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
   saveScore(imgData);
 }
 
-
 function saveScore(imgData) {
   drawCtx.putImageData(imgData, 0, 0);
 
-  const ratio = (typeof window._figureAreaExact === "number" && window._figureAreaExact > 0)
-    ? scoreInc / window._figureAreaExact
-    : 0;
+  const denom = (typeof window._figureAreaExact === "number" && window._figureAreaExact > 0)
+    ? window._figureAreaExact
+    : SELECTED_FIGURE.maxScore;
 
+  const ratio = scoreInc / denom;
   const percent = ratio * 100;
+
   const formatted = new Intl.NumberFormat("en-US", {
     minimumIntegerDigits: 1,
     minimumFractionDigits: 5
