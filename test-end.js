@@ -154,43 +154,41 @@ function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
   // exact denominator
   const A_fig_exact = figureAreaAnalytic(figureScale);
 
-  // collect drawn pixels
-  const drawn = [];
+  // collect ALL drawn pixels (fractional alpha)
+  const allDrawn = [];
   for (let i = 0; i < data.length; i += 4) {
     const a = data[i + 3] / 255;
     if (a === 0) continue;
     const px = (i >> 2) % W;
     const py = ((i >> 2) / W) | 0;
-    drawn.push({ px, py, a });
+    allDrawn.push({ px, py, a });
   }
 
-  if (drawn.length === 0) {
+  if (allDrawn.length === 0) {
     scoreInc = 0;
     window._figureAreaExact = A_fig_exact;
     if (progressBar) progressBar.value = 1;
     return saveScore(imgData);
   }
 
-  // -------- SPEED FIX: sample at most N points --------
+  // -------- SPEED: sample only for dy search --------
   const MAX_SAMPLES = 10000;
-  if (drawn.length > MAX_SAMPLES) {
-    // reservoir sample without allocations
-    const step = Math.max(1, Math.floor(drawn.length / MAX_SAMPLES));
+  let sample = allDrawn;
+  if (allDrawn.length > MAX_SAMPLES) {
+    const step = Math.max(1, Math.floor(allDrawn.length / MAX_SAMPLES));
     const sampled = [];
-    for (let i = 0; i < drawn.length; i += step) sampled.push(drawn[i]);
-    drawn.length = 0;
-    Array.prototype.push.apply(drawn, sampled);
+    for (let i = 0; i < allDrawn.length; i += step) sampled.push(allDrawn[i]);
+    sample = sampled;
   }
 
-  // expected vertical shift
   const baseY = AVG_Y * figureScale;
 
-  function scoreWithDy(dy) {
+  function scoreWithDyOn(set, dy) {
     let Ain = 0, Aout = 0;
-    for (let k = 0; k < drawn.length; k++) {
-      const a = drawn[k].a;
-      const x = drawn[k].px - W / 2;          // horizontal aligned at center
-      const y = drawn[k].py - H / 2 - (baseY + dy);
+    for (let k = 0; k < set.length; k++) {
+      const a = set[k].a;
+      const x = set[k].px - W / 2;
+      const y = set[k].py - H / 2 - (baseY + dy);
 
       let theta = -Math.atan2(y, x);
       if (theta < SELECTED_FIGURE.minTheta || theta > SELECTED_FIGURE.maxTheta) {
@@ -207,22 +205,21 @@ function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
     return { Ain, Aout, score: Ain - Aout };
   }
 
-  // -------- fast coarse search on dy only --------
-  let best = { dy: 0, Ain: 0, Aout: 0, score: -Infinity };
-
+  // coarse dy search on the SAMPLE
+  let bestDy = 0, bestScore = -Infinity;
   for (let dy = -12; dy <= 12; dy += 1) {
-    const s = scoreWithDy(dy);
-    if (s.score > best.score) best = { dy, Ain: s.Ain, Aout: s.Aout, score: s.score };
+    const s = scoreWithDyOn(sample, dy);
+    if (s.score > bestScore) { bestScore = s.score; bestDy = dy; }
+  }
+  // fine dy search on the SAMPLE
+  for (let dy = bestDy - 0.75; dy <= bestDy + 0.75; dy += 0.25) {
+    const s = scoreWithDyOn(sample, dy);
+    if (s.score > bestScore) { bestScore = s.score; bestDy = dy; }
   }
 
-  // -------- tiny refinement around best --------
-  for (let dy = best.dy - 0.75; dy <= best.dy + 0.75; dy += 0.25) {
-    const s = scoreWithDy(dy);
-    if (s.score > best.score) best = { dy, Ain: s.Ain, Aout: s.Aout, score: s.score };
-  }
-
-  // publish
-  scoreInc = best.Ain - best.Aout;
+  // -------- FINAL SCORE: recompute using ALL drawn pixels with bestDy --------
+  const final = scoreWithDyOn(allDrawn, bestDy);
+  scoreInc = final.Ain - final.Aout;
   window._figureAreaExact = A_fig_exact;
 
   if (progressBar) progressBar.value = 1;
