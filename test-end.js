@@ -292,7 +292,7 @@ function saveScore(imgData) {
   }).format(percent) + "%";
 
   // show two lines when negative
-  const out = (percent < 0) ? ("NEGATIVE VALUE<br>" + fmt) : fmt;
+  const out = (percent < 0) ? ("NEGATIVE VALUE" + fmt) : fmt;
 
   sessionStorage.scoreObject = JSON.stringify(out);
 
