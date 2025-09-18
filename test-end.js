@@ -24,10 +24,18 @@ function computeFigureScale() {
   return Math.min(xScale, yScale);
 }
 
-// ---- Live scoring (low-res) ----
-const LIVE_SIZE = 512;
+// ===== Live scoring helper (low-res, synced with final) =====
+const LIVE_SIZE = SCORE_AREA_SIZE;       
 let _liveMask = null;
 let _liveScale = 1;
+let _liveLastScale = null;
+let _liveFigureKey = null;
+
+// Rebuild the mask if figure changes or scale changes
+function _figureKey() {
+  // Any stable identifier for the current figure shape
+  return `${SELECTED_FIGURE.minTheta}|${SELECTED_FIGURE.maxTheta}|${SELECTED_FIGURE.width}|${SELECTED_FIGURE.maxY}|${SELECTED_FIGURE.minY}`;
+}
 
 function _buildLiveMask(figureScale) {
   const c = document.createElement("canvas");
@@ -35,12 +43,12 @@ function _buildLiveMask(figureScale) {
   const cx = c.getContext("2d");
   cx.imageSmoothingEnabled = false;
 
-  const s = LIVE_SIZE / SCORE_AREA_SIZE;   // downscale factor
+  const s = LIVE_SIZE / SCORE_AREA_SIZE; // downscale factor to match final scoring space
   _liveScale = s;
 
   const minT = SELECTED_FIGURE.minTheta;
   const maxT = SELECTED_FIGURE.maxTheta;
-  const inc = (maxT - minT) / THETA_RESOLUTION_HIGH_LOD;
+  const inc  = (maxT - minT) / THETA_RESOLUTION_HIGH_LOD;
 
   const inner = new Path2D();
   const outer = new Path2D();
@@ -48,19 +56,24 @@ function _buildLiveMask(figureScale) {
   let r = getCoordsFromFigure(minT, figureScale * s, LIVE_SIZE/2, LIVE_SIZE/2);
   inner.moveTo(r.innerX, r.innerY);
   outer.moveTo(r.outerX, r.outerY);
+
   for (let t = minT + inc; t <= maxT + 1e-3; t += inc) {
     r = getCoordsFromFigure(t, figureScale * s, LIVE_SIZE/2, LIVE_SIZE/2);
     inner.lineTo(r.innerX, r.innerY);
     outer.lineTo(r.outerX, r.outerY);
   }
 
+  // Fill band: outer filled, inner punched
   cx.fillStyle = "#fff";
   cx.globalCompositeOperation = "source-over"; cx.fill(outer);
   cx.globalCompositeOperation = "destination-out"; cx.fill(inner);
 
   _liveMask = cx.getImageData(0, 0, LIVE_SIZE, LIVE_SIZE).data;
+  _liveLastScale = figureScale;
+  _liveFigureKey = _figureKey();
 }
 
+// Throttled live scorer (call after drawing updates)
 function liveScoreThrottled(figureScale) {
   // throttle ~10 fps
   const now = performance.now();
@@ -68,9 +81,12 @@ function liveScoreThrottled(figureScale) {
   if (now - liveScoreThrottled._last < 100) return;
   liveScoreThrottled._last = now;
 
-  if (!_liveMask) _buildLiveMask(figureScale);
+  // Rebuild mask if needed
+  if (!_liveMask || _liveLastScale !== figureScale || _liveFigureKey !== _figureKey()) {
+    _buildLiveMask(figureScale);
+  }
 
-  // redraw strokes into a low-res canvas
+  // Rasterize current strokes into a low-res canvas in the same coordinate space
   const c = document.createElement("canvas");
   c.width = c.height = LIVE_SIZE;
   const cx = c.getContext("2d");
@@ -116,25 +132,34 @@ function liveScoreThrottled(figureScale) {
 
   let Afig = 0, Ain = 0, Aout = 0;
   for (let i = 0; i < dr.length; i += 4) {
-    const fig = _liveMask[i + 3] > 0;
-    const drawn = dr[i + 3] > 0;
+    const fig   = _liveMask[i + 3] > 0;   // figure mask alpha
+    const drawn = dr[i + 3] > 0;          // drawn alpha
     if (fig) Afig++;
     if (drawn && fig) Ain++;
     if (drawn && !fig) Aout++;
   }
+
   const ratio = Afig > 0 ? (Ain - Aout) / Afig : 0;
 
   const el = document.getElementById("liveScore");
   if (!el) return;
-  if (ratio < 0) {
-    const fmt = new Intl.NumberFormat("en-US", { minimumIntegerDigits: 1, minimumFractionDigits: 4 })
-                .format(Math.round(ratio * 100 * 10000) / 10000) + "%";
-    el.innerHTML = "\n NEGATIVE VALUE \n" + fmt;
+
+  const pct = Math.round(ratio * 100 * 10000) / 10000;
+  if (pct < 0) {
+    const fmt = new Intl.NumberFormat("en-US", {
+      minimumIntegerDigits: 1,
+      minimumFractionDigits: 4
+    }).format(pct) + "%";
+    el.innerHTML = "NEGATIVE VALUE<br>" + fmt;
   } else {
-    el.textContent = new Intl.NumberFormat("en-US", { minimumIntegerDigits: 1, minimumFractionDigits: 4 })
-                      .format(Math.round(ratio * 100 * 10000) / 10000) + "%";
+    el.textContent = new Intl.NumberFormat("en-US", {
+      minimumIntegerDigits: 1,
+      minimumFractionDigits: 4
+    }).format(pct) + "%";
   }
 }
+// ===== End live scoring helper =====
+
 
 
 var scoreInc = 0;
