@@ -148,63 +148,64 @@ function scoreFigure() {
 }
 
 function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
-  // fractional coverage counting
-  const drawData = imgData.data;
+  const data = imgData.data;
+  const W = SCORE_AREA_SIZE, H = SCORE_AREA_SIZE;
 
-  // figure area is analytic to remove denominator error
-  const A_fig_exact = figureAreaAnalytic(figureScale);
+  // center that cancels the internal AVG_Y shift in getCoordsFromFigure
+  const xCenter = W / 2;
+  const yCenter = H / 2 - AVG_Y * figureScale;
 
-  // figure masks at two angular resolutions to estimate discretization error
-  const thetaRes1 = THETA_RESOLUTION_HIGH_LOD;
-  const thetaRes2 = THETA_RESOLUTION_HIGH_LOD * 2;
+  // exact figure area by integration
+  const a = SELECTED_FIGURE.minTheta, b = SELECTED_FIGURE.maxTheta;
+  const n = 4096;                 // even
+  const h = (b - a) / n;
+  let accum = 0;
+  for (let i = 0; i <= n; i++) {
+    const t = a + i * h;
+    const eq = SELECTED_FIGURE.calcRad(t);
+    const ro = eq.outer * figureScale, ri = eq.inner * figureScale;
+    const band = 0.5 * (ro*ro - ri*ri);
+    accum += (i === 0 || i === n) ? band : (i % 2 === 0 ? 2*band : 4*band);
+  }
+  const A_fig_exact = accum * h;
 
-  const fig1 = buildFigureMask(figureScale, thetaRes1);
-  const fig2 = buildFigureMask(figureScale, thetaRes2);
+  // fractional area counts only where the user actually drew
+  let A_in = 0, A_out = 0;
+  for (let y = 0; y < H; y++) {
+    const yy = y - yCenter;
+    for (let x = 0; x < W; x++) {
+      const idx = (y * W + x) * 4;
+      const d = data[idx + 3] / 255;   // drawn coverage
+      if (d === 0) continue;
 
-  function scoreWithMask(figData) {
-    let A_in = 0;
-    let A_out = 0;
+      const xx = x - xCenter;
+      const theta = -Math.atan2(yy, xx);
+      if (theta < a || theta > b) { A_out += d; continue; }
 
-    for (let i = 0; i < figData.length; i += 4) {
-      const f = figData[i + 3] / 255;   // figure coverage in pixel
-      const d = drawData[i + 3] / 255;  // drawing coverage in pixel
+      const r = Math.hypot(xx, yy);
+      const eq = SELECTED_FIGURE.calcRad(theta);
+      const innerR = eq.inner * figureScale;
+      const outerR = eq.outer * figureScale;
 
-      A_in  += d * f;        // drawn inside
-      A_out += d * (1 - f);  // drawn outside
+      if (r >= innerR && r <= outerR) A_in += d;
+      else A_out += d;
     }
-
-    const ratio = (A_in - A_out) / A_fig_exact;
-    return { A_in, A_out, ratio };
   }
 
-  const s1 = scoreWithMask(fig1);
-  const s2 = scoreWithMask(fig2);
-
-  // publish the best estimate and a conservative margin from refinement
-  const ratio = s2.ratio;                         // finer angular resolution estimate
-  const moe_disc = Math.abs(s2.ratio - s1.ratio); // deterministic discretization margin
-
-  // keep old pipeline variables alive
-  scoreInc = s2.A_in - s2.A_out;
-  window._areaMode = true;
+  scoreInc = A_in - A_out;
   window._figureAreaExact = A_fig_exact;
-  window._moe_disc = moe_disc;
 
   if (progressBar) progressBar.value = 1;
-
   saveScore(imgData);
 }
+
 
 function saveScore(imgData) {
   drawCtx.putImageData(imgData, 0, 0);
 
-  // compute final percent and margin in percent units
-  let ratio;
-  if (window._areaMode && typeof window._figureAreaExact === "number") {
-    ratio = (scoreInc) / window._figureAreaExact;
-  } else {
-    ratio = scoreInc / SELECTED_FIGURE.maxScore;
-  }
+  const ratio = (typeof window._figureAreaExact === "number" && window._figureAreaExact > 0)
+    ? scoreInc / window._figureAreaExact
+    : 0;
 
   const percent = ratio * 100;
   const formatted = new Intl.NumberFormat("en-US", {
@@ -212,22 +213,9 @@ function saveScore(imgData) {
     minimumFractionDigits: 5
   }).format(percent) + "%";
 
-  // margin from angular discretization refinement
-  const moePercent = (Math.abs(window._moe_disc || 0) * 100);
-  const moeFormatted = new Intl.NumberFormat("en-US", {
-    minimumIntegerDigits: 1,
-    minimumFractionDigits: 5
-  }).format(moePercent) + "%";
-
-  // store both score and margin
   sessionStorage.scoreObject = JSON.stringify(formatted);
-  sessionStorage.scoreMargin = JSON.stringify(moeFormatted);
 
   if (SCORE_DEBUG) return;
-
-  if (IS_TEST) {
-    location.href = "testEnd_auth.html";
-  } else {
-    location.href = "testPracticeEnd.html";
-  }
+  if (IS_TEST) location.href = "testEnd_auth.html";
+  else location.href = "testPracticeEnd.html";
 }
