@@ -129,7 +129,7 @@ function liveScoreThrottled(figureScale) {
   if (ratio < 0) {
     const fmt = new Intl.NumberFormat("en-US", { minimumIntegerDigits: 1, minimumFractionDigits: 4 })
                 .format(Math.round(ratio * 100 * 10000) / 10000) + "%";
-    el.innerHTML = "NEGATIVE VALUE<br>" + fmt;
+    el.innerHTML = "\n NEGATIVE VALUE" + \n fmt;
   } else {
     el.textContent = new Intl.NumberFormat("en-US", { minimumIntegerDigits: 1, minimumFractionDigits: 4 })
                       .format(Math.round(ratio * 100 * 10000) / 10000) + "%";
