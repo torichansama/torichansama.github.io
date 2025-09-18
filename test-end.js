@@ -61,78 +61,42 @@ function _buildLiveMask(figureScale) {
   _liveMask = cx.getImageData(0, 0, LIVE_SIZE, LIVE_SIZE).data;
 }
 
-function liveScoreThrottled(figureScale) {
-  // throttle ~10 fps
-  const now = performance.now();
-  if (!liveScoreThrottled._last) liveScoreThrottled._last = 0;
-  if (now - liveScoreThrottled._last < 100) return;
-  liveScoreThrottled._last = now;
+const s = _liveScale;
+const drawToScoreScale = (figureScale / SCALE) * s;
 
-  if (!_liveMask) _buildLiveMask(figureScale);
+cx.lineCap = "round";
+cx.lineJoin = "round";
 
-  // redraw strokes into a low-res canvas
-  const c = document.createElement("canvas");
-  c.width = c.height = LIVE_SIZE;
-  const cx = c.getContext("2d");
-  cx.imageSmoothingEnabled = false;
+for (const st of strokes) {
+  cx.globalCompositeOperation = (st.strokeColor === DRAW_COLOR) ? "source-over" : "destination-out";
+  cx.strokeStyle = "red";
+  cx.fillStyle = "red";
+  cx.lineWidth = st.brushSize * 2 * drawToScoreScale;
 
-  const s = _liveScale;
-  const drawToScoreScale = (figureScale / SCALE) * s;
-
-  cx.lineCap = "round";
-  cx.lineJoin = "round";
-  for (const st of strokes) {
-    cx.globalCompositeOperation = (st.strokeColor === DRAW_COLOR) ? "source-over" : "destination-out";
-    cx.strokeStyle = "red";
-    cx.fillStyle = "red";
-    cx.lineWidth = st.brushSize * 2 * drawToScoreScale;
-
-    if (st.x.length === 1) {
-      circle(
-        Math.round(st.x[0] * drawToScoreScale + LIVE_SIZE/2),
-        Math.round(st.y[0] * drawToScoreScale + LIVE_SIZE/2),
-        st.brushSize * drawToScoreScale,
-        true,
-        cx
-      );
-      continue;
-    }
-
-    cx.beginPath();
-    cx.moveTo(
+  if (st.x.length === 1) {
+    // single point = circle (same as final)
+    circle(
       Math.round(st.x[0] * drawToScoreScale + LIVE_SIZE/2),
-      Math.round(st.y[0] * drawToScoreScale + LIVE_SIZE/2)
+      Math.round(st.y[0] * drawToScoreScale + LIVE_SIZE/2),
+      st.brushSize * drawToScoreScale,
+      true,
+      cx
     );
-    for (let i = 1; i < st.x.length; i++) {
-      cx.lineTo(
-        Math.round(st.x[i] * drawToScoreScale + LIVE_SIZE/2),
-        Math.round(st.y[i] * drawToScoreScale + LIVE_SIZE/2)
-      );
-    }
+    continue;
+  }
+
+  cx.beginPath();
+  cx.moveTo(
+    Math.round(st.x[0] * drawToScoreScale + LIVE_SIZE/2),
+    Math.round(st.y[0] * drawToScoreScale + LIVE_SIZE/2)
+  );
+  // IMPORTANT: stroke each segment, like the final scorer does
+  for (let i = 0; i < st.x.length; i++) {
+    cx.lineTo(
+      Math.round(st.x[i] * drawToScoreScale + LIVE_SIZE/2),
+      Math.round(st.y[i] * drawToScoreScale + LIVE_SIZE/2)
+    );
     cx.stroke();
-  }
-
-  const dr = cx.getImageData(0, 0, LIVE_SIZE, LIVE_SIZE).data;
-
-  let Afig = 0, Ain = 0, Aout = 0;
-  for (let i = 0; i < dr.length; i += 4) {
-    const fig = _liveMask[i + 3] > 0;
-    const drawn = dr[i + 3] > 0;
-    if (fig) Afig++;
-    if (drawn && fig) Ain++;
-    if (drawn && !fig) Aout++;
-  }
-  const ratio = Afig > 0 ? (Ain - Aout) / Afig : 0;
-
-  const el = document.getElementById("liveScore");
-  if (!el) return;
-  if (ratio < 0) {
-    const fmt = new Intl.NumberFormat("en-US", { minimumIntegerDigits: 1, minimumFractionDigits: 4 })
-                .format(Math.round(ratio * 100 * 10000) / 10000) + "%";
-    el.innerHTML = "NEGATIVE VALUE " + fmt;
-  } else {
-    el.textContent = new Intl.NumberFormat("en-US", { minimumIntegerDigits: 1, minimumFractionDigits: 4 })
-                      .format(Math.round(ratio * 100 * 10000) / 10000) + "%";
   }
 }
 
