@@ -61,7 +61,7 @@ function _buildLiveMask(figureScale) {
   _liveMask = cx.getImageData(0, 0, LIVE_SIZE, LIVE_SIZE).data;
 }
 // How often live updates are allowed during drag (lower = smoother, higher = lighter)
-const LIVE_THROTTLE_MS = 500; // e.g., 50 (~20 fps), 100 (~10 fps), 150-200 (lighter)
+const LIVE_THROTTLE_MS = 100; // e.g., 50 (~20 fps), 100 (~10 fps), 150-200 (lighter)
 
 // Throttled live scorer. Call it after drawing updates, or with {force:true} on tap start/end.
 function liveScoreThrottled(figureScale, { force = false } = {}) {
