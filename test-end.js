@@ -148,47 +148,26 @@ function scoreFigure() {
 }
 
 function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
-  const data = imgData.data;
-  const W = SCORE_AREA_SIZE, H = SCORE_AREA_SIZE;
+  const drawData = imgData.data;
 
-  // exact figure area by Simpson integration
-  const a = SELECTED_FIGURE.minTheta, b = SELECTED_FIGURE.maxTheta;
-  const n = 4096;
-  const h = (b - a) / n;
-  let s = 0;
-  for (let i = 0; i <= n; i++) {
-    const t = a + i * h;
-    const eq = SELECTED_FIGURE.calcRad(t);
-    const ro = eq.outer * figureScale;
-    const ri = eq.inner * figureScale;
-    const band = 0.5 * (ro * ro - ri * ri);
-    s += (i === 0 || i === n) ? band : (i % 2 === 0 ? 2 * band : 4 * band);
-  }
-  const A_fig_exact = s * h;
+  // exact denominator from analytic integral
+  const A_fig_exact = figureAreaAnalytic(figureScale);
 
+  // figure mask in the SAME scoring canvas space as the strokes
+  // centerX = SCORE_AREA_SIZE/2, centerY = SCORE_AREA_SIZE/2 are already used inside buildFigureMask via getCoordsFromFigure
+  const figData = buildFigureMask(figureScale, THETA_RESOLUTION_HIGH_LOD * 2); // finer mask for accuracy
+
+  // fractional coverage accumulation
   let A_in = 0;
   let A_out = 0;
 
-  for (let i = 0; i < data.length; i += 4) {
-    const alpha = data[i + 3] / 255;
-    if (alpha === 0) continue; // skip blank pixels
+  for (let i = 0; i < figData.length; i += 4) {
+    const f = figData[i + 3] / 255;   // figure coverage in this pixel
+    const d = drawData[i + 3] / 255;  // drawn coverage in this pixel
+    if (d === 0) continue;            // skip when user drew nothing here
 
-    const x = (i / 4) % W - W / 2;
-    const y = Math.floor((i / 4) / W) - H / 2 - AVG_Y * figureScale; // match original scorer
-
-    let theta = -Math.atan2(y, x);
-    if (theta < a || theta > b) {
-      A_out += alpha;
-      continue;
-    }
-
-    const r = Math.hypot(x, y);
-    const eq = SELECTED_FIGURE.calcRad(theta);
-    const innerR = eq.inner * figureScale;
-    const outerR = eq.outer * figureScale;
-
-    if (r >= innerR && r <= outerR) A_in += alpha;
-    else A_out += alpha;
+    A_in  += d * f;        // drawn inside the band
+    A_out += d * (1 - f);  // drawn outside the band
   }
 
   scoreInc = A_in - A_out;
