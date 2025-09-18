@@ -97,39 +97,60 @@ function scoreFigure() {
 
 
 function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
-    // score by user marks, not pixels
-    let inside = 0;
-    let outside = 0;
-    let total = 0;
+    // imgData already contains the rasterized user drawing
+    const drawData = imgData.data;
 
-    const drawToScoreScale = figureScale / SCALE;
+    // build a clean figure mask at the same center and scale
+    const figCanvas = document.createElement("canvas");
+    figCanvas.width = SCORE_AREA_SIZE;
+    figCanvas.height = SCORE_AREA_SIZE;
+    const figCtx = figCanvas.getContext("2d", { willReadFrequently: false });
+    figCtx.imageSmoothingEnabled = false;
 
-    // count only drawn marks, ignore eraser strokes
-    for (const stroke of strokes) {
-        if (stroke.strokeColor !== DRAW_COLOR) continue;
-        for (let k = 0; k < stroke.x.length; k++) {
-            const x = stroke.x[k] * drawToScoreScale;                         // centered space, no half size added
-            const y = stroke.y[k] * drawToScoreScale - AVG_Y * figureScale;   // match figure y offset
+    const minAngle = SELECTED_FIGURE.minTheta;
+    const maxAngle = SELECTED_FIGURE.maxTheta;
+    const thetaInc = (maxAngle - minAngle) / THETA_RESOLUTION_HIGH_LOD;
 
-            const theta = -Math.atan2(y, x);
-            const rUser = Math.hypot(x, y);
+    const innerPath = new Path2D();
+    const outerPath = new Path2D();
 
-            const fc = getCoordsFromFigure(theta, figureScale, 0, -AVG_Y * figureScale);
-            const innerR = Math.hypot(fc.innerX, -fc.innerY);
-            const outerR = Math.hypot(fc.outerX, -fc.outerY);
+    let r = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE / 2, SCORE_AREA_SIZE / 2);
+    innerPath.moveTo(r.innerX, r.innerY);
+    outerPath.moveTo(r.outerX, r.outerY);
 
-            if (rUser >= innerR && rUser <= outerR) inside++;
-            else outside++;
-
-            total++;
-        }
+    for (let t = minAngle + thetaInc; t <= maxAngle + 1e-3; t += thetaInc) {
+        r = getCoordsFromFigure(t, figureScale, SCORE_AREA_SIZE / 2, SCORE_AREA_SIZE / 2);
+        innerPath.lineTo(r.innerX, r.innerY);
+        outerPath.lineTo(r.outerX, r.outerY);
     }
 
-    // preserve old global so saveScore still works
-    scoreInc = inside - outside;
+    // fill outer ring then punch inner hole to create band
+    figCtx.fillStyle = "#fff";
+    figCtx.globalCompositeOperation = "source-over";
+    figCtx.fill(outerPath);
+    figCtx.globalCompositeOperation = "destination-out";
+    figCtx.fill(innerPath);
 
-    // hand total to saveScore without touching other code
-    window._strokeTotal = total;
+    const figData = figCtx.getImageData(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE).data;
+
+    let A_fig = 0;
+    let A_in = 0;
+    let A_out = 0;
+
+    // count by alpha
+    for (let i = 0; i < figData.length; i += 4) {
+        const figOn = figData[i + 3] > 0;
+        const drawn = drawData[i + 3] > 0;
+
+        if (figOn) A_fig++;
+        if (drawn && figOn) A_in++;
+        if (drawn && !figOn) A_out++;
+    }
+
+    // publish for saveScore
+    window._areaMode = true;
+    window._figureArea = A_fig;
+    scoreInc = A_in - A_out;
 
     if (progressBar) progressBar.value = 1;
 
@@ -143,26 +164,23 @@ function saveScore(imgData) {
         alert(scoreInc);
     }
 
-    let score;
-    if (typeof window._strokeTotal === "number" && window._strokeTotal > 0) {
-        // stroke based normalization
-        score = Math.round((scoreInc / window._strokeTotal) * 100 * 10000) / 10000;
+    let ratio;
+    if (window._areaMode && typeof window._figureArea === "number" && window._figureArea > 0) {
+        // strict area normalization
+        ratio = scoreInc / window._figureArea;
     } else {
-        // fallback to old normalization if needed
-        score = Math.round(scoreInc / SELECTED_FIGURE.maxScore * 100 * 10000) / 10000;
+        // legacy fallback if area mode not set
+        ratio = scoreInc / SELECTED_FIGURE.maxScore;
     }
 
-    if (score < 0) {
-        score = "NEGATIVE VALUE";
-    } else {
-        const scoreFormat = new Intl.NumberFormat("en-US", {
-            minimumIntegerDigits: 1,
-            minimumFractionDigits: 4
-        });
-        score = scoreFormat.format(score) + "%";
-    }
+    // allow true negatives if outside area exceeds inside
+    const percent = Math.round(ratio * 100 * 10000) / 10000;
+    const formatted = new Intl.NumberFormat("en-US", {
+        minimumIntegerDigits: 1,
+        minimumFractionDigits: 4
+    }).format(percent) + "%";
 
-    sessionStorage.scoreObject = JSON.stringify(score);
+    sessionStorage.scoreObject = JSON.stringify(formatted);
 
     if (SCORE_DEBUG) return;
 
@@ -172,4 +190,3 @@ function saveScore(imgData) {
         location.href = "testPracticeEnd.html";
     }
 }
-
