@@ -26,6 +26,7 @@
         <button class="toggleButton" id="brush" onclick="setBrush(DRAW_COLOR)"><i class="fa fa-pencil"></i></button>
         <button class="toggleButton" id="eraser" onclick="setBrush(ERASE_COLOR)"><i class="fa fa-eraser"></i></button>
     </div>
+    <span id="liveScore"></span>
 </div>
 </body>
 
@@ -161,6 +162,10 @@ function extendCurrentStroke (rawX, rawY) {
     // currentStroke.y.push(Math.round((rawY-offsetY)/zoom));
     lastStrokeX = rawX;
     lastStrokeY = rawY;
+         if (LIVE_SCORING) {
+             const fs = computeFigureScale();
+             liveScoreThrottled(fs);
+     }
 }
 
 
