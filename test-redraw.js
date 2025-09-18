@@ -64,6 +64,13 @@ function drawCtxRedraw() {
         }
         drawCtx.stroke();
     });
+
+// at the very end of drawCtxRedraw() in test-redraw.js
+if (typeof LIVE_SCORING !== "undefined" && LIVE_SCORING) {
+  const fs = computeFigureScale();
+  liveScoreThrottled(fs);
+}
+
 }
 
 //Drawing the content of the figure canvas---------------------------------------------------------
