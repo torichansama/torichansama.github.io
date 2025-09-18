@@ -21,118 +21,148 @@ function endTest() {
 var scoreInc = 0;
 
 function scoreFigure() {
-    let insideCount = 0;
-    let outsideCount = 0;
-    let totalCount = 0;
+    let progressBar = document.getElementById("progress");
 
-    // Adjust scaling and centering for your project
-    let figureScale = ...; // Set this appropriately
-    let centerX = ...; // Typically drawCanvas.width / 2
-    let centerY = ...; // Typically drawCanvas.height / 2
+    drawCanvas.style.width = `${SCORE_AREA_SIZE}px`;
+    drawCanvas.style.height = `${SCORE_AREA_SIZE}px`;
+    drawCanvas.width = SCORE_AREA_SIZE; 
+    drawCanvas.height = SCORE_AREA_SIZE;
 
-    for (let stroke of strokes) {
-        for (let i = 0; i < stroke.x.length; i++) {
-            let x = stroke.x[i];
-            let y = stroke.y[i];
+    drawCtx.clearRect(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE); //Should be wiped by canvas resize but cant be too safe
 
-            // Apply centering/scaling if needed
-            let relX = x - centerX;
-            let relY = y - centerY;
+    let yScale = (SCORE_AREA_SIZE/2-500)/(SELECTED_FIGURE.maxY-AVG_Y);
+    let xScale = (SCORE_AREA_SIZE/2-500)/(SELECTED_FIGURE.width/2);
+    let figureScale = Math.min(xScale, yScale); //Scale of figure in scoring mode
+    let drawToScoreScale = figureScale/SCALE; //Realtive size of scoring figure compared to drawing figure
 
-            let r = Math.hypot(relX, relY);
-            let theta = Math.atan2(relY, relX);
+    if (!SCORE_DEBUG) {drawCanvas.style.display = "none";}
+    else {
+        let minAngle = SELECTED_FIGURE.minTheta;
+        let maxAngle = SELECTED_FIGURE.maxTheta;
 
-            let figureCoords = getCoordsFromFigure(theta, figureScale, 0, 0);
-            let innerR = Math.hypot(figureCoords.innerX, figureCoords.innerY);
-            let outerR = Math.hypot(figureCoords.outerX, figureCoords.outerY);
+        drawCtx.strokeStyle = "black";
+        
+        let thetaInc = (maxAngle-minAngle)/THETA_RESOLUTION_HIGH_LOD;
 
-            if (r >= innerR && r <= outerR) {
-                insideCount++;
-            } else {
-                outsideCount++;
-            }
-            totalCount++;
+        let innerPath = new Path2D();
+        let outerPath = new Path2D();
+
+        let rads = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
+        innerPath.moveTo(rads.innerX, rads.innerY);
+        outerPath.moveTo(rads.outerX, rads.outerY);
+
+        for (let theta = minAngle+thetaInc; theta <= maxAngle+0.01; theta += thetaInc) {
+            let rads = getCoordsFromFigure(theta, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
+            innerPath.lineTo(rads.innerX, rads.innerY);
+            outerPath.lineTo(rads.outerX, rads.outerY);
         }
+
+        drawCtx.stroke(innerPath);
+        drawCtx.stroke(outerPath);
     }
 
-    let score = 0;
-    if (totalCount > 0) {
-        score = (insideCount - outsideCount) / totalCount;
-    }
+    //Drawing strokes using one continuous line
+    drawCtx.strokeStyle = "red";
+    drawCtx.fillStyle = "red";
+    drawCtx.lineCap = "round";
+    drawCtx.lineJoin = "round";
 
-    // Save or display score as percentage, 4 decimal places
-    let scorePercent = (score * 100).toFixed(4) + "%";
-    sessionStorage.scoreObject = JSON.stringify(scorePercent);
+    strokes.forEach(stroke => {
+        if (stroke.strokeColor == DRAW_COLOR) {
+            drawCtx.globalCompositeOperation = "source-over";
+        } else {
+            drawCtx.globalCompositeOperation = "destination-out";
+        }
+        drawCtx.lineWidth = stroke.brushSize*2*drawToScoreScale;
 
-    // Route to next page as before
-    if (IS_TEST) {
-        location.href = "testEnd_auth.html";
-    } else {
-        location.href = "testPracticeEnd.html";
-    }
+        if (stroke.x.length == 1) { //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
+            console.log(stroke.brushSize*drawToScoreScale);
+            circle(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2), stroke.brushSize*drawToScoreScale, true, drawCtx);
+            // circle(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2), 100, true, drawCtx);
+            return;
+        }
+
+        drawCtx.beginPath();
+        drawCtx.moveTo(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2))
+        for (let i = 0; i < stroke.x.length; i++) {
+            drawCtx.lineTo(Math.round(stroke.x[i]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[i]*drawToScoreScale+SCORE_AREA_SIZE/2));
+            drawCtx.stroke();
+        }
+    });
+
+    //Score strokes against figure 
+    let imgData = drawCtx.getImageData(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE);
+    mainScoreLoop(0, imgData, figureScale, progressBar);
 }
 
 
 function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
-    let i = startingOffset;
-    while (i < startingOffset+imgData.data.length/8) { //WARNING! This divisor MUST be a multiple of 4 to prevent erronous scoring
-        if (imgData.data[i] == 0 && !FIND_MAX_SCORE) { //Skip blank pixels
-            i += 4;
-            continue;
-        }
+    // score by user marks, not pixels
+    let inside = 0;
+    let outside = 0;
+    let total = 0;
 
-        let x = (i / 4) % SCORE_AREA_SIZE - SCORE_AREA_SIZE/2;
-        let y = Math.floor((i / 4) / SCORE_AREA_SIZE) - SCORE_AREA_SIZE/2 - AVG_Y*figureScale;
-        let theta = -Math.atan2(y, x);
-        let pixelR = Math.hypot(x, y);
-        let figureCoords = getCoordsFromFigure(theta, figureScale, 0, -AVG_Y*figureScale);
-        let innerR = Math.hypot(figureCoords.innerX, -figureCoords.innerY);
-        let outerR = Math.hypot(figureCoords.outerX, -figureCoords.outerY);
+    const drawToScoreScale = figureScale / SCALE;
 
-        if (pixelR >= innerR && pixelR <= outerR) {
-            imgData.data[i+1] = 255;
-            imgData.data[i+3] = 255;
-            scoreInc++;
-        } else if (!FIND_MAX_SCORE){
-            imgData.data[i+2] = 255;
-            imgData.data[i+3] = 255;
-            scoreInc--;
+    // count only drawn marks, ignore eraser strokes
+    for (const stroke of strokes) {
+        if (stroke.strokeColor !== DRAW_COLOR) continue;
+        for (let k = 0; k < stroke.x.length; k++) {
+            const x = stroke.x[k] * drawToScoreScale;                         // centered space, no half size added
+            const y = stroke.y[k] * drawToScoreScale - AVG_Y * figureScale;   // match figure y offset
+
+            const theta = -Math.atan2(y, x);
+            const rUser = Math.hypot(x, y);
+
+            const fc = getCoordsFromFigure(theta, figureScale, 0, -AVG_Y * figureScale);
+            const innerR = Math.hypot(fc.innerX, -fc.innerY);
+            const outerR = Math.hypot(fc.outerX, -fc.outerY);
+
+            if (rUser >= innerR && rUser <= outerR) inside++;
+            else outside++;
+
+            total++;
         }
-        if (pixelR < 30 && SCORE_DEBUG) { //Show 0,0
-            imgData.data[i+2] = 255;
-            imgData.data[i+3] = 255;
-        }
-        i += 4;
     }
 
-    progressBar.value = i/imgData.data.length;
+    // preserve old global so saveScore still works
+    scoreInc = inside - outside;
 
-    if (i < imgData.data.length) {
-        setTimeout(()=>{mainScoreLoop(i, imgData, figureScale, progressBar)}, 0);
-    } else {
-        saveScore(imgData);
-    }
+    // hand total to saveScore without touching other code
+    window._strokeTotal = total;
+
+    if (progressBar) progressBar.value = 1;
+
+    saveScore(imgData);
 }
 
 function saveScore(imgData) {
     drawCtx.putImageData(imgData, 0, 0);
 
-    if (FIND_MAX_SCORE || SCORE_DEBUG) { //Alert the max score
+    if (FIND_MAX_SCORE || SCORE_DEBUG) {
         alert(scoreInc);
     }
-    
-    //Publish score to sessionStorage
-    let score = Math.round(scoreInc/SELECTED_FIGURE.maxScore*100*10000)/10000 //Round to 4 decimal places
+
+    let score;
+    if (typeof window._strokeTotal === "number" && window._strokeTotal > 0) {
+        // stroke based normalization
+        score = Math.round((scoreInc / window._strokeTotal) * 100 * 10000) / 10000;
+    } else {
+        // fallback to old normalization if needed
+        score = Math.round(scoreInc / SELECTED_FIGURE.maxScore * 100 * 10000) / 10000;
+    }
+
     if (score < 0) {
         score = "NEGATIVE VALUE";
     } else {
-        let scoreFormat = new Intl.NumberFormat('en-US', { 
-            minimumIntegerDigits: 1, 
-            minimumFractionDigits: 4 //Guaruntees 4 decimal places
+        const scoreFormat = new Intl.NumberFormat("en-US", {
+            minimumIntegerDigits: 1,
+            minimumFractionDigits: 4
         });
-        score = scoreFormat.format(score)+"%";
+        score = scoreFormat.format(score) + "%";
     }
-    sessionStorage.scoreObject = JSON.stringify(score); //Stores drawing score in the session storages
+
+    sessionStorage.scoreObject = JSON.stringify(score);
 
     if (SCORE_DEBUG) return;
 
@@ -142,3 +172,4 @@ function saveScore(imgData) {
         location.href = "testPracticeEnd.html";
     }
 }
+
