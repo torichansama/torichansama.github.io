@@ -24,6 +24,119 @@ function computeFigureScale() {
   return Math.min(xScale, yScale);
 }
 
+// ---- Live scoring (low-res) ----
+const LIVE_SIZE = 512;
+let _liveMask = null;
+let _liveScale = 1;
+
+function _buildLiveMask(figureScale) {
+  const c = document.createElement("canvas");
+  c.width = c.height = LIVE_SIZE;
+  const cx = c.getContext("2d");
+  cx.imageSmoothingEnabled = false;
+
+  const s = LIVE_SIZE / SCORE_AREA_SIZE;   // downscale factor
+  _liveScale = s;
+
+  const minT = SELECTED_FIGURE.minTheta;
+  const maxT = SELECTED_FIGURE.maxTheta;
+  const inc = (maxT - minT) / THETA_RESOLUTION_HIGH_LOD;
+
+  const inner = new Path2D();
+  const outer = new Path2D();
+
+  let r = getCoordsFromFigure(minT, figureScale * s, LIVE_SIZE/2, LIVE_SIZE/2);
+  inner.moveTo(r.innerX, r.innerY);
+  outer.moveTo(r.outerX, r.outerY);
+  for (let t = minT + inc; t <= maxT + 1e-3; t += inc) {
+    r = getCoordsFromFigure(t, figureScale * s, LIVE_SIZE/2, LIVE_SIZE/2);
+    inner.lineTo(r.innerX, r.innerY);
+    outer.lineTo(r.outerX, r.outerY);
+  }
+
+  cx.fillStyle = "#fff";
+  cx.globalCompositeOperation = "source-over"; cx.fill(outer);
+  cx.globalCompositeOperation = "destination-out"; cx.fill(inner);
+
+  _liveMask = cx.getImageData(0, 0, LIVE_SIZE, LIVE_SIZE).data;
+}
+
+function liveScoreThrottled(figureScale) {
+  // throttle ~10 fps
+  const now = performance.now();
+  if (!liveScoreThrottled._last) liveScoreThrottled._last = 0;
+  if (now - liveScoreThrottled._last < 100) return;
+  liveScoreThrottled._last = now;
+
+  if (!_liveMask) _buildLiveMask(figureScale);
+
+  // redraw strokes into a low-res canvas
+  const c = document.createElement("canvas");
+  c.width = c.height = LIVE_SIZE;
+  const cx = c.getContext("2d");
+  cx.imageSmoothingEnabled = false;
+
+  const s = _liveScale;
+  const drawToScoreScale = (figureScale / SCALE) * s;
+
+  cx.lineCap = "round";
+  cx.lineJoin = "round";
+  for (const st of strokes) {
+    cx.globalCompositeOperation = (st.strokeColor === DRAW_COLOR) ? "source-over" : "destination-out";
+    cx.strokeStyle = "red";
+    cx.fillStyle = "red";
+    cx.lineWidth = st.brushSize * 2 * drawToScoreScale;
+
+    if (st.x.length === 1) {
+      circle(
+        Math.round(st.x[0] * drawToScoreScale + LIVE_SIZE/2),
+        Math.round(st.y[0] * drawToScoreScale + LIVE_SIZE/2),
+        st.brushSize * drawToScoreScale,
+        true,
+        cx
+      );
+      continue;
+    }
+
+    cx.beginPath();
+    cx.moveTo(
+      Math.round(st.x[0] * drawToScoreScale + LIVE_SIZE/2),
+      Math.round(st.y[0] * drawToScoreScale + LIVE_SIZE/2)
+    );
+    for (let i = 1; i < st.x.length; i++) {
+      cx.lineTo(
+        Math.round(st.x[i] * drawToScoreScale + LIVE_SIZE/2),
+        Math.round(st.y[i] * drawToScoreScale + LIVE_SIZE/2)
+      );
+    }
+    cx.stroke();
+  }
+
+  const dr = cx.getImageData(0, 0, LIVE_SIZE, LIVE_SIZE).data;
+
+  let Afig = 0, Ain = 0, Aout = 0;
+  for (let i = 0; i < dr.length; i += 4) {
+    const fig = _liveMask[i + 3] > 0;
+    const drawn = dr[i + 3] > 0;
+    if (fig) Afig++;
+    if (drawn && fig) Ain++;
+    if (drawn && !fig) Aout++;
+  }
+  const ratio = Afig > 0 ? (Ain - Aout) / Afig : 0;
+
+  const el = document.getElementById("liveScore");
+  if (!el) return;
+  if (ratio < 0) {
+    const fmt = new Intl.NumberFormat("en-US", { minimumIntegerDigits: 1, minimumFractionDigits: 4 })
+                .format(Math.round(ratio * 100 * 10000) / 10000) + "%";
+    el.innerHTML = "NEGATIVE VALUE<br>" + fmt;
+  } else {
+    el.textContent = new Intl.NumberFormat("en-US", { minimumIntegerDigits: 1, minimumFractionDigits: 4 })
+                      .format(Math.round(ratio * 100 * 10000) / 10000) + "%";
+  }
+}
+
+
 var scoreInc = 0;
 
 function scoreFigure() {
