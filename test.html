@@ -35,17 +35,24 @@
     bottom: calc(14px + env(safe-area-inset-bottom)) !important;
     transform: translateX(-50%) !important;
     z-index: 99999 !important;
-    background: rgba(0,0,0,0.75);
-    color: #fff;
-    padding: 6px 10px;
-    border-radius: 10px;
+
+    /* new look */
+    background: transparent !important;
+    color: #000 !important;
+    border: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+
+    padding: 0;               /* remove pill padding */
+    border-radius: 0;         /* remove rounded shape */
     font-weight: 600;
     font-family: system-ui, sans-serif;
     pointer-events: none;
-    min-width: 80px;
+    min-width: 0;
     text-align: center;
   ">
 </span>
+
   
 </body>
 
