@@ -67,7 +67,7 @@
 const PI = Math.PI;
 const TAU = 2*Math.PI;
 
-const LIVE_SCORING = false; //useful for testing scoring errors; however, it does not have timed scoring updated (instead it does updates with strokes) and does not have same stroke sequencing (stroke per segment), so it will have some inconsistency with final score. Also it has strong lag to have same number of pixels, 4096 as real score. To reduce lag reduce pixels used in live scoring
+const LIVE_SCORING = true; //useful for testing scoring errors; however, it does not have timed scoring updated (instead it does updates with strokes) and does not have same stroke sequencing (stroke per segment), so it will have some inconsistency with final score. Also it has strong lag to have same number of pixels, 4096 as real score. To reduce lag reduce pixels used in live scoring
 
 var scale = window.devicePixelRatio;
 const W = COMP_TESTING ? window.innerWidth-90 : screen.height-90;
