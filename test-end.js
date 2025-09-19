@@ -60,44 +60,34 @@ function _buildLiveMask(figureScale) {
 
   _liveMask = cx.getImageData(0, 0, LIVE_SIZE, LIVE_SIZE).data;
 }
-// How often live updates are allowed during drag (lower = smoother, higher = lighter)
-const LIVE_THROTTLE_MS = 100; // e.g., 50 (~20 fps), 100 (~10 fps), 150-200 (lighter)
 
-// Throttled live scorer. Call it after drawing updates, or with {force:true} on tap start/end.
-function liveScoreThrottled(figureScale, { force = false } = {}) {
-  // throttle guard
+function liveScoreThrottled(figureScale) {
+  // throttle ~10 fps
   const now = performance.now();
   if (!liveScoreThrottled._last) liveScoreThrottled._last = 0;
-  if (!force && (now - liveScoreThrottled._last < LIVE_THROTTLE_MS)) return;
+  if (now - liveScoreThrottled._last < 100) return;
   liveScoreThrottled._last = now;
 
-  // Rebuild the figure mask if scale/figure changed
-  if (!_liveMask || _liveLastScale !== figureScale || _liveFigureKey !== _figureKey()) {
-    _buildLiveMask(figureScale);
-  }
+  if (!_liveMask) _buildLiveMask(figureScale);
 
-  // Low/hi-res raster canvas (set LIVE_SIZE in your helper; for exact parity use SCORE_AREA_SIZE)
+  // redraw strokes into a low-res canvas
   const c = document.createElement("canvas");
   c.width = c.height = LIVE_SIZE;
   const cx = c.getContext("2d");
   cx.imageSmoothingEnabled = false;
 
-  const s = _liveScale; // LIVE_SIZE / SCORE_AREA_SIZE
+  const s = _liveScale;
   const drawToScoreScale = (figureScale / SCALE) * s;
 
-  // Match final line rasterization settings
   cx.lineCap = "round";
   cx.lineJoin = "round";
-
-  // Draw each stroke (per-segment stroking to match final)
   for (const st of strokes) {
     cx.globalCompositeOperation = (st.strokeColor === DRAW_COLOR) ? "source-over" : "destination-out";
     cx.strokeStyle = "red";
-    cx.fillStyle   = "red";
-    cx.lineWidth   = st.brushSize * 2 * drawToScoreScale;
+    cx.fillStyle = "red";
+    cx.lineWidth = st.brushSize * 2 * drawToScoreScale;
 
     if (st.x.length === 1) {
-      // Single tap → render as a filled circle (same as final)
       circle(
         Math.round(st.x[0] * drawToScoreScale + LIVE_SIZE/2),
         Math.round(st.y[0] * drawToScoreScale + LIVE_SIZE/2),
@@ -118,36 +108,33 @@ function liveScoreThrottled(figureScale, { force = false } = {}) {
         Math.round(st.x[i] * drawToScoreScale + LIVE_SIZE/2),
         Math.round(st.y[i] * drawToScoreScale + LIVE_SIZE/2)
       );
-      cx.stroke(); // stroke each segment for parity with final scoring
     }
+    cx.stroke();
   }
 
-  // Count coverage
   const dr = cx.getImageData(0, 0, LIVE_SIZE, LIVE_SIZE).data;
+
   let Afig = 0, Ain = 0, Aout = 0;
   for (let i = 0; i < dr.length; i += 4) {
-    const fig   = _liveMask[i + 3] > 0;  // figure band
-    const drawn = dr[i + 3] > 0;         // user marks
+    const fig = _liveMask[i + 3] > 0;
+    const drawn = dr[i + 3] > 0;
     if (fig) Afig++;
     if (drawn && fig) Ain++;
     if (drawn && !fig) Aout++;
   }
-
   const ratio = Afig > 0 ? (Ain - Aout) / Afig : 0;
+
   const el = document.getElementById("liveScore");
   if (!el) return;
-
-  const pct = Math.round(ratio * 100 * 10000) / 10000;
-  if (pct < 0) {
+  if (ratio < 0) {
     const fmt = new Intl.NumberFormat("en-US", { minimumIntegerDigits: 1, minimumFractionDigits: 4 })
-                  .format(pct) + "%";
-    el.innerHTML = "NEGATIVE VALUE<br>" + fmt;
+                .format(Math.round(ratio * 100 * 10000) / 10000) + "%";
+    el.innerHTML = "NEGATIVE VALUE " + fmt;
   } else {
     el.textContent = new Intl.NumberFormat("en-US", { minimumIntegerDigits: 1, minimumFractionDigits: 4 })
-                      .format(pct) + "%";
+                      .format(Math.round(ratio * 100 * 10000) / 10000) + "%";
   }
 }
-
 
 
 var scoreInc = 0;
