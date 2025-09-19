@@ -46,6 +46,13 @@
     text-align: center;
   ">
 </span>
+
+<script>
+  if (typeof LIVE_SCORING !== "undefined" && !LIVE_SCORING) {
+    const el = document.getElementById("liveScore");
+    if (el) el.style.display = "none";
+  }
+</script>
   
 </body>
 
