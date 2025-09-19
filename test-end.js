@@ -63,17 +63,6 @@ function _buildLiveMask(figureScale) {
 
 function liveScoreThrottled(figureScale) {
   // throttle ~10 fps
-
-      // --- visibility gate (put this FIRST) ---
-  const badge = document.getElementById("liveScore");
-  if (typeof LIVE_SCORING !== "undefined" && !LIVE_SCORING) {
-    if (badge) { badge.style.display = "none"; badge.textContent = ""; }
-    return; // bail early when live scoring is off
-  }
-  if (!badge) return;        // no badge in DOM, nothing to do
-  badge.style.display = "";  // ensure it's shown when live scoring is on
-  // --- end visibility gate --
-    
   const now = performance.now();
   if (!liveScoreThrottled._last) liveScoreThrottled._last = 0;
   if (now - liveScoreThrottled._last < 100) return;
