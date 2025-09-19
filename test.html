@@ -1,380 +1,339 @@
 <!DOCTYPE html>
-<head><title>DPAA Testing Software</title></head>
-
-<!-- Font Awesome by Dave Gandy - http://fontawesome.io -->    
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
-<link rel="stylesheet" href="test_style.css">
+<head>
+  <title>DPAA Testing Software</title>
+  <!-- Font Awesome by Dave Gandy - http://fontawesome.io -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="test_style.css">
+</head>
 
 <body>
-<!-- Canvas stack for background grid, drawing, and rendering the figure -->
-<canvas id="gridCanvas"></canvas>    
-<canvas id="drawCanvas"></canvas>    
-<canvas id="figureCanvas"></canvas>
+  <!-- Canvas stack for background grid, drawing, and rendering the figure -->
+  <canvas id="gridCanvas"></canvas>
+  <canvas id="drawCanvas"></canvas>
+  <canvas id="figureCanvas"></canvas>
 
-<!-- Timer -->
-<div id="timerDiv">
+  <!-- Timer -->
+  <div id="timerDiv">
     <p id="timer" style="margin-bottom: 0px; margin-top: 7px;"></p>
-</div>
-<button id="endEarly" onclick="promptSessionEnd()">End</button>
+  </div>
+  <button id="endEarly" onclick="promptSessionEnd()">End</button>
 
-<div id="sideDiv">
+  <div id="sideDiv">
     <!-- Buttons -->
     <button class="ripple" id="resetZoom" onclick="zoomOut(true)"><i class="fa fa-compress"></i></button>
 
     <!-- Brush/Eraser Toggle -->
     <div id="toggleDiv">
-        <button class="toggleButton" id="brush" onclick="setBrush(DRAW_COLOR)"><i class="fa fa-pencil"></i></button>
-        <button class="toggleButton" id="eraser" onclick="setBrush(ERASE_COLOR)"><i class="fa fa-eraser"></i></button>
+      <button class="toggleButton" id="brush" onclick="setBrush(DRAW_COLOR)"><i class="fa fa-pencil"></i></button>
+      <button class="toggleButton" id="eraser" onclick="setBrush(ERASE_COLOR)"><i class="fa fa-eraser"></i></button>
     </div>
-</div>
+  </div>
 
-<span id="liveScore"
-  style="
-    position: fixed !important;
-    left: 50% !important;
-    bottom: calc(14px + env(safe-area-inset-bottom)) !important;
-    transform: translateX(-50%) !important;
-    z-index: 99999 !important;
+  <!-- Live score badge (styling lives in test_style.css) -->
+  <span id="liveScore">0.0000%</span>
 
-    /* new look */
-    background: transparent !important;
-    color: #000 !important;
-    border: none !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
+  <script src="gen-config.js"></script>
+  <script src="gen-figures.js"></script>
+  <script src="test-end.js"></script>
+  <script src="test-prompt.js"></script>
+  <script src="test-redraw.js"></script>
+  <script src="test-touchListener.js"></script>
 
-    padding: 0;               /* remove pill padding */
-    border-radius: 0;         /* remove rounded shape */
-    font-weight: 600;
-    font-family: system-ui, sans-serif;
-    pointer-events: none;
-    min-width: 0;
-    text-align: center;
-  ">
-</span>
+  <script>
+    // ===== Constant Declarations ================================================================
+    const PI = Math.PI;
+    const TAU = 2 * Math.PI;
 
-  
-</body>
+    // Toggle live scoring here (JS will hide/show the badge via CSS class)
+    const LIVE_SCORING = true;
 
-<script src="gen-config.js"></script>
-<script src="gen-figures.js"></script>
-<script src="test-end.js"></script>
-<script src="test-prompt.js"></script>
-<script src="test-redraw.js"></script>
-<script src="test-touchListener.js"></script>
-<script>
-//Constant Declarations----------------------------------------------------------------------------
-const PI = Math.PI;
-const TAU = 2*Math.PI;
+    var scale = window.devicePixelRatio;
+    const W = COMP_TESTING ? window.innerWidth - 90 : screen.height - 90;
+    const H = COMP_TESTING ? window.innerHeight : screen.width;
 
-const LIVE_SCORING = true; //useful for testing scoring errors; however, it does not have timed scoring updated (instead it does updates with strokes) and does not have same stroke sequencing (stroke per segment), so it will have some inconsistency with final score. Also it has strong lag to have same number of pixels, 4096 as real score. To reduce lag reduce pixels used in live scoring
+    const GRID_SIZE = W / 6;
+    const RENDER_GRID = JSON.parse(localStorage.displayGrid) == "true";
 
-var scale = window.devicePixelRatio;
-const W = COMP_TESTING ? window.innerWidth-90 : screen.height-90;
-const H = COMP_TESTING ? window.innerHeight : screen.width;
+    const ZOOM_SENS = 0.002;
+    const MAX_ZOOM = 28; //34
 
-const GRID_SIZE = W/6;
-const RENDER_GRID = JSON.parse(localStorage.displayGrid) == "true";
+    const SELECTED_FIGURE = figures[parseInt(JSON.parse(localStorage.selectedFigure))];
+    const THETA_RESOLUTION_HIGH_LOD = 500;
+    const THETA_RESOLUTION_LOW_LOD = 200;
 
-const ZOOM_SENS = 0.002;
-const MAX_ZOOM = 28; //34
+    const IS_TEST = JSON.parse(sessionStorage.isTest) == "true";
+    const ENABLE_TIMER = IS_TEST || JSON.parse(localStorage.practiceTimer) == "true";
+    const ENABLE_SCORING = IS_TEST || JSON.parse(localStorage.practiceScore) == "true";
 
-const SELECTED_FIGURE = figures[parseInt(JSON.parse(localStorage.selectedFigure))];
-const THETA_RESOLUTION_HIGH_LOD = 500;
-const THETA_RESOLUTION_LOW_LOD = 200;
+    const TEST_TIME_LIMIT_SEC = parseFloat(JSON.parse(localStorage.timerLengthMinutes)) * 60;
+    const PRACTICE_TIME_LIMIT_SEC = parseFloat(JSON.parse(localStorage.practiceTimerLengthMinutes)) * 60;
+    const TIME_FORMAT = new Intl.NumberFormat('en-US', {
+      minimumIntegerDigits: 2 // 05:01 instead of 5:1
+    });
 
-const IS_TEST = JSON.parse(sessionStorage.isTest) == "true";
-const ENABLE_TIMER = IS_TEST || JSON.parse(localStorage.practiceTimer) == "true";
-const ENABLE_SCORING = IS_TEST || JSON.parse(localStorage.practiceScore) == "true";
+    const DRAW_W_FINGER = !IS_TEST && JSON.parse(localStorage.practiceDrawMode) == "finger";
+    const ERASE_COLOR = "#FFFFFF";
+    const DRAW_COLOR = IS_TEST ? "#808080" : "#808080";
 
-const TEST_TIME_LIMIT_SEC = parseFloat(JSON.parse(localStorage.timerLengthMinutes))*60;
-const PRACTICE_TIME_LIMIT_SEC = parseFloat(JSON.parse(localStorage.practiceTimerLengthMinutes))*60;
-const TIME_FORMAT = new Intl.NumberFormat('en-US', { 
-    minimumIntegerDigits: 2 //Guaruntees leading and trailing 0's, ex. 05:01 instead of 5:1
-});
+    // DO NOT CHANGE - STANDARDIZES TEST RESULTS
+    const AVG_Y = (SELECTED_FIGURE.minY + SELECTED_FIGURE.maxY) / 2;
+    const Y_SCALE = (H / 2 - 60) / (SELECTED_FIGURE.maxY - AVG_Y);
+    const X_SCALE = (W / 2 - 100) / (SELECTED_FIGURE.width / 2);
+    const SCALE = Math.min(X_SCALE, Y_SCALE);
 
-const DRAW_W_FINGER = !IS_TEST && JSON.parse(localStorage.practiceDrawMode) == "finger"; //Draw with finger only if in practice mode and the setting is selected
-const ERASE_COLOR = "#FFFFFF";
-const DRAW_COLOR = IS_TEST ? "#808080" : "#808080"; //Test Color : Practice Color
+    const SCORE_AREA_SIZE = 4096; // iOS/Safari max safe canvas dimension
+    const BRUSH_SIZE = parseInt(JSON.parse(localStorage.brushSize)) / 600 * SCALE;
 
-//DO NOT CHANGE - STANDARDIZES TEST RESULTS
-const AVG_Y = (SELECTED_FIGURE.minY+SELECTED_FIGURE.maxY)/2;
-const Y_SCALE = (H/2-60)/(SELECTED_FIGURE.maxY-AVG_Y);
-const X_SCALE = (W/2-100)/(SELECTED_FIGURE.width/2);
-const SCALE = Math.min(X_SCALE, Y_SCALE);
+    // ===== Canvas Setup and Styling =============================================================
+    var gridCanvas = document.getElementById('gridCanvas');
+    var gridCtx = gridCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
 
-const SCORE_AREA_SIZE = 4096; //CANNOT EXCEED 4096px by 4096px DUE TO iOS/SAFARI LIMITATIONS
+    var drawCanvas = document.getElementById('drawCanvas');
+    var drawCtx = drawCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
 
-const BRUSH_SIZE = parseInt(JSON.parse(localStorage.brushSize))/600*SCALE;
+    var figureCanvas = document.getElementById('figureCanvas');
+    var figureCtx = figureCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
 
+    var canvasCol = document.getElementsByTagName("canvas");
+    for (let i = 0; i < canvasCol.length; i++) {
+      canvasCol[i].style.width = `${W}px`;
+      canvasCol[i].style.height = `${H}px`;
 
-//Canvas Setup and Styling-------------------------------------------------------------------------
-var gridCanvas = document.getElementById('gridCanvas')
-var gridCtx = gridCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
-
-var drawCanvas = document.getElementById('drawCanvas')
-var drawCtx = drawCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
-
-var figureCanvas = document.getElementById('figureCanvas')
-var figureCtx = figureCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
-
-var canvasCol = document.getElementsByTagName("canvas");
-for (let i = 0; i < canvasCol.length; i++) {
-    canvasCol[i].style.width = `${W}px`;
-    canvasCol[i].style.height = `${H}px`;
-
-    canvasCol[i].width = W*scale; 
-    canvasCol[i].height = H*scale;
-}
-
-gridCtx.scale(scale, scale);
-drawCtx.scale(scale, scale);
-figureCtx.scale(scale, scale);
-
-//Color of the grid
-gridCtx.strokeStyle = "grey"; //CHANGE ME!
-
-drawCtx.lineCap = "round";
-drawCtx.lineJoin = "round";
-
-figureCtx.strokeStyle = "black";
-figureCtx.lineCap = "butt";
-figureCtx.lineJoin = "butt";
-figureCtx.lineWidth = 1.9;
-
-
-//Variable Declarations----------------------------------------------------------------------------
-var oldGridSize = GRID_SIZE;
-
-var offsetX = W/2;
-var offsetY = H/2+50;
-var zoomX = 0;
-var zoomY = 0;
-var zoom = 1;
-
-var zoomGestureDist;
-var panX;
-var panY;
-var dynamicGridSize;
-var touchXOffset = 0;
-
-var timerSeconds = IS_TEST ? TEST_TIME_LIMIT_SEC : PRACTICE_TIME_LIMIT_SEC;
-
-var currentStroke;
-var lastStrokeX;
-var lastStrokeY;
-var brushColor;
-
-var activePrompt = null;
-
-var rightHanded = true;
-
-var strokes = [];
-function PenStroke (xStart, yStart, strokeColor) {
-    this.x = [(xStart-offsetX)/zoom];
-    this.y = [(yStart-offsetY)/zoom];
-    // this.x = [Math.round((xStart-offsetX)/zoom)];
-    // this.y = [Math.round((yStart-offsetY)/zoom)];
-    this.brushSize = BRUSH_SIZE/zoom;
-    this.strokeColor = strokeColor;
-    lastStrokeX = xStart;
-    lastStrokeY = yStart;
-}
-function extendCurrentStroke (rawX, rawY) {
-    if (currentStroke == undefined) return;
-    currentStroke.x.push((rawX-offsetX)/zoom);
-    currentStroke.y.push((rawY-offsetY)/zoom);
-    // currentStroke.x.push(Math.round((rawX-offsetX)/zoom));
-    // currentStroke.y.push(Math.round((rawY-offsetY)/zoom));
-    lastStrokeX = rawX;
-    lastStrokeY = rawY;
-         if (LIVE_SCORING) {
-             const fs = computeFigureScale();
-             liveScoreThrottled(fs);
-     }
-}
-
-
-//Define all prompts (modals)----------------------------------------------------------------------
-// Prompts must be called with activatePrompt(prompt_to_activate)
-// To clear the active prompt, call clearPrompt()
-var beginTest = new Prompt("Press play to begin test.<br></br>Timer countdown will begin immediately.", "rgba(240,240,240,1)", [
-    new PromptElement("button", "fa fa-caret-right", "green", cancelPrompt)
-]);
-var endTestEarly = new Prompt("End Test Before Timer Ends?", "rgba(0,0,0,0.3)", [
-    new PromptElement("button", "fa fa-check", "green", endTest),
-    new PromptElement("button", "fa fa-times", "#6b0000", cancelPrompt)
-]);
-var endPracticeEarly = new Prompt("End Practice Session?", "rgba(0,0,0,0.3)", [
-    new PromptElement("button", "fa fa-check", "green", endTest),
-    new PromptElement("button", "fa fa-times", "#6b0000", cancelPrompt)
-]);
-var timerExpired = new Prompt("Timer Expired.", "rgba(0,0,0,0.3)", [
-    new PromptElement("button", "fa fa-arrow-right", "green", endTest),
-]);
-var loading = new Prompt("Scoring...", "rgba(240,240,240,1)", [
-    new PromptElement("progress", "fa fa-arrow-right", "green", endTest),
-]);
-var handedness = new Prompt("Select your dominant hand:", "rgba(240,240,240,1)", [
-    new PromptElement("button", "L", "black", ()=>{setHandedness("left")}),
-    new PromptElement("button", "R", "black", ()=>{setHandedness("right")})
-]);
-
-//Program Initialization---------------------------------------------------------------------------
-sessionStorage.isTest = JSON.stringify("false"); //Clear any previously set isTest flag 
-
-mainRedraw(); //Draw main content
-
-activatePrompt(handedness); //Call handedness prompt
-
-if (ENABLE_TIMER) {
-    document.getElementById("timerDiv").style.display = "block"; //Display timer
-    updateTimer(); //Display initialized time
-    setInterval(decrementTimer, 1000); //Decrement timer every 1000ms (1 sec)
-}
-
-
-//Drawing the content of the main canvas-----------------------------------------------------------
-function mainRedraw() {
-    //Calculate screen offsets for zooming and panning
-    dynamicGridSize = GRID_SIZE*zoom;
-    let gridDelta = dynamicGridSize - oldGridSize;
-    offsetX -= gridDelta*(zoomX-offsetX)/oldGridSize;
-    offsetY -= gridDelta*(zoomY-offsetY)/oldGridSize;
-    oldGridSize = dynamicGridSize;
-
-    //Limit panning
-    offsetX = clamp(offsetX, W-W*0.53*zoom, W*0.53*zoom);
-    offsetY = clamp(offsetY, H-H*0.53*zoom, H*0.53*zoom);
-
-    //Call each canvas' redraw functions
-    gridCtxRedraw();
-    drawCtxRedraw();
-    figureCtxRedraw();
-}    
-
-
-//Toggle button between brush and eraser-----------------------------------------------------------
-function setBrush(color) {
-    brushColor = color;
-
-    let active = document.getElementById("brush");
-    let inactive = document.getElementById("eraser");
-    if (color == ERASE_COLOR) {
-        active = document.getElementById("eraser");
-        inactive = document.getElementById("brush");
+      canvasCol[i].width = W * scale;
+      canvasCol[i].height = H * scale;
     }
 
-    active.style.outline = "2px solid black";
-    inactive.style.outline = "4px outset black";
-    
-    active.style.backgroundColor = "#bdbbbb";
-    inactive.style.backgroundColor = "#FFFFFF";
-}
-setBrush(DRAW_COLOR); //Initialize to brush instead of eraser
+    gridCtx.scale(scale, scale);
+    drawCtx.scale(scale, scale);
+    figureCtx.scale(scale, scale);
 
+    // Grid color
+    gridCtx.strokeStyle = "grey";
 
-//Set handedness of user---------------------------------------------------------------------------
-function setHandedness(hand) {
-    if (hand == "right") {
-        //Handle all the canvas'
+    drawCtx.lineCap = "round";
+    drawCtx.lineJoin = "round";
+
+    figureCtx.strokeStyle = "black";
+    figureCtx.lineCap = "butt";
+    figureCtx.lineJoin = "butt";
+    figureCtx.lineWidth = 1.9;
+
+    // ===== Variable Declarations ================================================================
+    var oldGridSize = GRID_SIZE;
+
+    var offsetX = W / 2;
+    var offsetY = H / 2 + 50;
+    var zoomX = 0;
+    var zoomY = 0;
+    var zoom = 1;
+
+    var zoomGestureDist;
+    var panX;
+    var panY;
+    var dynamicGridSize;
+    var touchXOffset = 0;
+
+    var timerSeconds = IS_TEST ? TEST_TIME_LIMIT_SEC : PRACTICE_TIME_LIMIT_SEC;
+
+    var currentStroke;
+    var lastStrokeX;
+    var lastStrokeY;
+    var brushColor;
+
+    var activePrompt = null;
+    var rightHanded = true;
+
+    var strokes = [];
+
+    function PenStroke(xStart, yStart, strokeColor) {
+      this.x = [(xStart - offsetX) / zoom];
+      this.y = [(yStart - offsetY) / zoom];
+      this.brushSize = BRUSH_SIZE / zoom;
+      this.strokeColor = strokeColor;
+      lastStrokeX = xStart;
+      lastStrokeY = yStart;
+    }
+
+    function extendCurrentStroke(rawX, rawY) {
+      if (currentStroke == undefined) return;
+      currentStroke.x.push((rawX - offsetX) / zoom);
+      currentStroke.y.push((rawY - offsetY) / zoom);
+      lastStrokeX = rawX;
+      lastStrokeY = rawY;
+
+      // Live scoring call on draw
+      if (LIVE_SCORING && typeof liveScoreThrottled === "function") {
+        const fs = computeFigureScale();
+        liveScoreThrottled(fs);
+      }
+    }
+
+    // ===== Prompts (modals) =====================================================================
+    var beginTest = new Prompt("Press play to begin test.<br></br>Timer countdown will begin immediately.", "rgba(240,240,240,1)", [
+      new PromptElement("button", "fa fa-caret-right", "green", cancelPrompt)
+    ]);
+    var endTestEarly = new Prompt("End Test Before Timer Ends?", "rgba(0,0,0,0.3)", [
+      new PromptElement("button", "fa fa-check", "green", endTest),
+      new PromptElement("button", "fa fa-times", "#6b0000", cancelPrompt)
+    ]);
+    var endPracticeEarly = new Prompt("End Practice Session?", "rgba(0,0,0,0.3)", [
+      new PromptElement("button", "fa fa-check", "green", endTest),
+      new PromptElement("button", "fa fa-times", "#6b0000", cancelPrompt)
+    ]);
+    var timerExpired = new Prompt("Timer Expired.", "rgba(0,0,0,0.3)", [
+      new PromptElement("button", "fa fa-arrow-right", "green", endTest),
+    ]);
+    var loading = new Prompt("Scoring...", "rgba(240,240,240,1)", [
+      new PromptElement("progress", "fa fa-arrow-right", "green", endTest),
+    ]);
+    var handedness = new Prompt("Select your dominant hand:", "rgba(240,240,240,1)", [
+      new PromptElement("button", "L", "black", () => { setHandedness("left") }),
+      new PromptElement("button", "R", "black", () => { setHandedness("right") })
+    ]);
+
+    // ===== Program Initialization ===============================================================
+    sessionStorage.isTest = JSON.stringify("false"); // Clear any previously set isTest flag
+
+    mainRedraw();           // Draw main content
+    activatePrompt(handedness); // Call handedness prompt
+
+    if (ENABLE_TIMER) {
+      document.getElementById("timerDiv").style.display = "block";
+      updateTimer();
+      setInterval(decrementTimer, 1000);
+    }
+
+    // ===== Main redraw ==========================================================================
+    function mainRedraw() {
+      // Calculate screen offsets for zooming and panning
+      dynamicGridSize = GRID_SIZE * zoom;
+      let gridDelta = dynamicGridSize - oldGridSize;
+      offsetX -= gridDelta * (zoomX - offsetX) / oldGridSize;
+      offsetY -= gridDelta * (zoomY - offsetY) / oldGridSize;
+      oldGridSize = dynamicGridSize;
+
+      // Limit panning
+      offsetX = clamp(offsetX, W - W * 0.53 * zoom, W * 0.53 * zoom);
+      offsetY = clamp(offsetY, H - H * 0.53 * zoom, H * 0.53 * zoom);
+
+      // Redraw layers
+      gridCtxRedraw();
+      drawCtxRedraw();
+      figureCtxRedraw();
+    }
+
+    // ===== Brush/Eraser Toggle ==================================================================
+    function setBrush(color) {
+      brushColor = color;
+
+      let active = document.getElementById("brush");
+      let inactive = document.getElementById("eraser");
+      if (color == ERASE_COLOR) {
+        active = document.getElementById("eraser");
+        inactive = document.getElementById("brush");
+      }
+
+      active.style.outline = "2px solid black";
+      inactive.style.outline = "4px outset black";
+
+      active.style.backgroundColor = "#bdbbbb";
+      inactive.style.backgroundColor = "#FFFFFF";
+    }
+    setBrush(DRAW_COLOR); // Initialize to brush instead of eraser
+
+    // ===== Handedness ===========================================================================
+    function setHandedness(hand) {
+      if (hand == "right") {
+        // Handle all the canvases
         for (let i = 0; i < canvasCol.length; i++) {
-            canvasCol[i].style.left = "90px";
+          canvasCol[i].style.left = "90px";
         }
 
-        //Handle sidebar UI
+        // Sidebar UI
         document.getElementById("sideDiv").style.left = "0px";
         document.getElementById("sideDiv").style.right = "auto";
 
-        //Handle Timer and End Test Buttons
+        // Timer and End Test Buttons
         document.body.style.flexDirection = "row-reverse";
         document.getElementById("timerDiv").style.marginLeft = "0px";
         document.getElementById("timerDiv").style.marginRight = "90px";
         document.getElementById("endEarly").style.marginLeft = "100px";
         document.getElementById("endEarly").style.marginRight = "10px";
 
-        //Handle the touch offset
+        // Touch offset
         touchXOffset = 90;
+      }
+
+      activatePrompt(beginTest);
     }
 
-    activatePrompt(beginTest);
-}
-
-
-//Drawing Shortcuts--------------------------------------------------------------------------------
-//Easy Circle Drawing
-function circle(x, y, r, fill, ctx) {
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, TAU, false);
-    if (fill) {
-        ctx.fill();
-    } else {
-        ctx.stroke();
+    // ===== Drawing helpers ======================================================================
+    function circle(x, y, r, fill, ctx) {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, TAU, false);
+      if (fill) { ctx.fill(); } else { ctx.stroke(); }
     }
-}
-//Easy Line Drawing
-function line(x, y, x2, y2, width, ctx) {
-    ctx.lineWidth = width;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-}
-
-//Math Utils---------------------------------------------------------------------------------------
-//Clamp number between minimum and maximum values
-function clamp(x, min, max) {
-    return Math.max(Math.min(x, max), min);
-}
-
-//Given value from 0-1 (alpha) interpolate between a and b
-function lerp(a, b, alpha) {
-    return a + clamp(alpha, 0, 1)*(b-a);
-}
-
-
-//Timer Handling-----------------------------------------------------------------------------------
-function updateTimer() {
-    let mins = TIME_FORMAT.format(""+Math.floor(timerSeconds/60));
-    let secs = TIME_FORMAT.format(""+timerSeconds%60);
-
-    document.getElementById("timer").textContent = mins+":"+secs; //Set the timer HTML element
-}
-function decrementTimer() {
-    if (activePrompt) { //Dont decrement timer if a prompt is active
-        return;
+    function line(x, y, x2, y2, width, ctx) {
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
     }
-    if (timerSeconds > 0) { //Decrement if >0, otherwise call timerExpiredPrompt
+
+    // ===== Math utils ===========================================================================
+    function clamp(x, min, max) { return Math.max(Math.min(x, max), min); }
+    function lerp(a, b, alpha) { return a + clamp(alpha, 0, 1) * (b - a); }
+
+    // ===== Timer handling =======================================================================
+    function updateTimer() {
+      let mins = TIME_FORMAT.format("" + Math.floor(timerSeconds / 60));
+      let secs = TIME_FORMAT.format("" + timerSeconds % 60);
+      document.getElementById("timer").textContent = mins + ":" + secs;
+    }
+    function decrementTimer() {
+      if (activePrompt) return;
+      if (timerSeconds > 0) {
         timerSeconds--;
         updateTimer();
-    } else {
+      } else {
         activatePrompt(timerExpired);
+      }
     }
-}
 
+    // ===== Zoom handling ========================================================================
+    function zoomOut(animate) {
+      offsetX = W / 2;
+      offsetY = H / 2 + 50;
+      zoomX = offsetX;
+      zoomY = offsetY;
+      zoom = 1;
+      oldGridSize = GRID_SIZE;
+      mainRedraw();
 
-//Zoom Handling------------------------------------------------------------------------------------
-//Reset to a centered view at a zoom of 1
-function zoomOut(animate) {
-    offsetX = W/2;
-    offsetY = H/2+50;
-    zoomX = offsetX;
-    zoomY = offsetY;
-    zoom = 1;
-    oldGridSize = GRID_SIZE;
-    mainRedraw();
+      if (animate) zoomOutAnimation(0);
+    }
 
-    if (animate) zoomOutAnimation(0);
-}
+    function zoomOutAnimation(inc) {
+      zoom -= 0.005 * Math.sign(10 - inc);
+      zoomX = offsetX;
+      zoomY = H / 2 - offsetY;
+      mainRedraw();
 
-//Bump zoom out then back in
-function zoomOutAnimation(inc) {
-    zoom -= 0.005*Math.sign(10-inc);
-    zoomX = offsetX;
-    zoomY = H/2-offsetY;
-    mainRedraw();
+      if (inc < 20) requestAnimationFrame(() => { zoomOutAnimation(inc + 1) });
+    }
 
-    if (inc < 20) requestAnimationFrame(() => {zoomOutAnimation(inc+1)});
-}
-</script>
+    // ===== Boot the live badge once so it's never blank =========================================
+    (function bootLiveBadge() {
+      const el = document.getElementById('liveScore');
+      if (!el) return;
+      if (!LIVE_SCORING) el.classList.add('hidden'); // CSS hides it when off
+      // Force one initial live update if the helper exists
+      if (LIVE_SCORING && typeof computeFigureScale === "function" && typeof liveScoreThrottled === "function") {
+        liveScoreThrottled._last = 0; // reset throttle window
+        liveScoreThrottled(computeFigureScale(), { force: true });
+      }
+    })();
+  </script>
+</body>
 </html>
