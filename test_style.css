@@ -164,3 +164,39 @@ button {
     height: 100vh;  
     outline: 2px solid black;
 }
+
+
+/* === Live Score Badge (bottom-center) ====================== */
+#liveScore {
+    position: fixed;
+    left: 50%;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 2000;                /* above canvases/toolbar */
+
+    /* look: black badge with white text */
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    text-align: center;
+    min-width: 80px;
+
+    pointer-events: none;         /* never blocks touches */
+    user-select: none;
+}
+
+/* Hide badge when live scoring is disabled */
+#liveScore.hidden {
+    display: none !important;
+}
+
+/* Optional: subtle glass effect for readability on busy drawings */
+@supports (backdrop-filter: blur(2px)) {
+    #liveScore {
+        backdrop-filter: blur(2px);
+    }
+}
