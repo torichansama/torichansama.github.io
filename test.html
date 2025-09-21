@@ -211,7 +211,7 @@ function mainRedraw() {
     oldGridSize = dynamicGridSize;
 
     //Limit panning
-    offsetX = clamp(offsetX, W-W*0.53*zoom, W*0.53*zoom);
+    offsetX = clamp(offsetX, W-W*0.51*zoom, W*0.51*zoom);
     offsetY = clamp(offsetY, H-H*0.53*zoom, H*0.53*zoom);
 
     //Call each canvas' redraw functions
@@ -271,6 +271,8 @@ function setHandedness(hand) {
 //Drawing Shortcuts--------------------------------------------------------------------------------
 //Easy Circle Drawing
 function circle(x, y, r, fill, ctx) {
+    if (r < 1) console.log("WARNING: Circle being drawn with radius " + r + ", potential rounding error");
+
     ctx.beginPath();
     ctx.arc(x, y, r, 0, TAU, false);
     if (fill) {
@@ -281,6 +283,8 @@ function circle(x, y, r, fill, ctx) {
 }
 //Easy Line Drawing
 function line(x, y, x2, y2, width, ctx) {
+    if (x == x2 && y == y2) console.log("WARNING: Line being drawn with idential start and endpoint");
+
     ctx.lineWidth = width;
     ctx.beginPath();
     ctx.moveTo(x, y);

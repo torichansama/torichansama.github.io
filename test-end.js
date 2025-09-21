@@ -21,10 +21,10 @@ function endTest() {
 var scoreInc = 0;
 
 function scoreFigure() {
-    let progressBar = document.getElementById("progress");
+    // let progressBar = document.getElementById("progress");
 
-    drawCanvas.style.width = `${SCORE_AREA_SIZE}px`;
-    drawCanvas.style.height = `${SCORE_AREA_SIZE}px`;
+    drawCanvas.style.width = `${H}px`;
+    drawCanvas.style.height = `${H}px`;
     drawCanvas.width = SCORE_AREA_SIZE; 
     drawCanvas.height = SCORE_AREA_SIZE;
 
@@ -35,37 +35,36 @@ function scoreFigure() {
     let figureScale = Math.min(xScale, yScale); //Scale of figure in scoring mode
     let drawToScoreScale = figureScale/SCALE; //Realtive size of scoring figure compared to drawing figure
 
-    if (!SCORE_DEBUG) {drawCanvas.style.display = "none";}
-    else {
-        let minAngle = SELECTED_FIGURE.minTheta;
-        let maxAngle = SELECTED_FIGURE.maxTheta;
+    //Stroke Figure Outline
+    let minAngle = SELECTED_FIGURE.minTheta;
+    let maxAngle = SELECTED_FIGURE.maxTheta;
 
-        drawCtx.strokeStyle = "black";
-        
-        let thetaInc = (maxAngle-minAngle)/THETA_RESOLUTION_HIGH_LOD;
+    drawCtx.strokeStyle = "black";
+    
+    let thetaInc = (maxAngle-minAngle)/THETA_RESOLUTION_HIGH_LOD;
 
-        let innerPath = new Path2D();
-        let outerPath = new Path2D();
+    let innerPath = new Path2D();
+    let outerPath = new Path2D();
 
-        let rads = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
-        innerPath.moveTo(rads.innerX, rads.innerY);
-        outerPath.moveTo(rads.outerX, rads.outerY);
+    let rads = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
+    innerPath.moveTo(rads.innerX, rads.innerY);
+    outerPath.moveTo(rads.outerX, rads.outerY);
 
-        for (let theta = minAngle+thetaInc; theta <= maxAngle+0.01; theta += thetaInc) {
-            let rads = getCoordsFromFigure(theta, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
-            innerPath.lineTo(rads.innerX, rads.innerY);
-            outerPath.lineTo(rads.outerX, rads.outerY);
-        }
-
-        drawCtx.stroke(innerPath);
-        drawCtx.stroke(outerPath);
+    for (let theta = minAngle+thetaInc; theta <= maxAngle+0.01; theta += thetaInc) {
+        let rads = getCoordsFromFigure(theta, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
+        innerPath.lineTo(rads.innerX, rads.innerY);
+        outerPath.lineTo(rads.outerX, rads.outerY);
     }
+
+    drawCtx.stroke(innerPath);
+    drawCtx.stroke(outerPath);
 
     //Drawing strokes using one continuous line
     drawCtx.strokeStyle = "red";
     drawCtx.fillStyle = "red";
     drawCtx.lineCap = "round";
     drawCtx.lineJoin = "round";
+    // circle(Math.round(0*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(0*drawToScoreScale+SCORE_AREA_SIZE/2), 50, true, drawCtx);
 
     strokes.forEach(stroke => {
         if (stroke.strokeColor == DRAW_COLOR) {
@@ -76,7 +75,6 @@ function scoreFigure() {
         drawCtx.lineWidth = stroke.brushSize*2*drawToScoreScale;
 
         if (stroke.x.length == 1) { //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
-            console.log(stroke.brushSize*drawToScoreScale);
             circle(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2), stroke.brushSize*drawToScoreScale, true, drawCtx);
             // circle(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2), 100, true, drawCtx);
             return;
@@ -105,6 +103,7 @@ function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
 
         let x = (i / 4) % SCORE_AREA_SIZE - SCORE_AREA_SIZE/2;
         let y = Math.floor((i / 4) / SCORE_AREA_SIZE) - SCORE_AREA_SIZE/2 - AVG_Y*figureScale;
+        // let y = Math.floor((i / 4) / SCORE_AREA_SIZE) - SCORE_AREA_SIZE/2;
         let theta = -Math.atan2(y, x);
         let pixelR = Math.hypot(x, y);
         let figureCoords = getCoordsFromFigure(theta, figureScale, 0, -AVG_Y*figureScale);
@@ -141,6 +140,7 @@ function saveScore(imgData) {
 
     if (FIND_MAX_SCORE || SCORE_DEBUG) { //Alert the max score
         alert(scoreInc);
+        console.log(scoreInc);
     }
     
     //Publish score to sessionStorage

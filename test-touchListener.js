@@ -3,8 +3,19 @@ function correctTouches(touches) {
     for (let i = 0; i < touches.length; i++) {
         cTouches.push(new Touch(touches[i].pageX-touchXOffset, touches[i].pageY, touches[i].touchType))
     }
+    if (debugShiftKey && cTouches.length == 1) {
+        cTouches.push(cTouches[0]);
+    }
     return cTouches;
 }
+
+var debugShiftKey = false;
+document.addEventListener('keydown', function(event) {
+  debugShiftKey = event.shiftKey;
+});
+document.addEventListener('keyup', function(event) {
+    debugShiftKey = event.shiftKey;
+});
 
 function Touch(pageX, pageY, touchType) {
     this.pageX = pageX;
