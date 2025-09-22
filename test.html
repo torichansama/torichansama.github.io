@@ -7,6 +7,7 @@
 
 <body>
 <!-- Canvas stack for background grid, drawing, and rendering the figure -->
+<canvas id="scoreCanvas"></canvas>
 <canvas id="gridCanvas"></canvas>    
 <canvas id="drawCanvas"></canvas>    
 <canvas id="figureCanvas"></canvas>
@@ -28,32 +29,7 @@
     </div>
 </div>
 
-<span id="liveScore"
-  style="
-    position: fixed !important;
-    left: 50% !important;
-    bottom: calc(14px + env(safe-area-inset-bottom)) !important;
-    transform: translateX(-50%) !important;
-    z-index: 99999 !important;
-
-    /* new look */
-    background: transparent !important;
-    color: #000 !important;
-    border: none !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-
-    padding: 0;               /* remove pill padding */
-    border-radius: 0;         /* remove rounded shape */
-    font-weight: 600;
-    font-family: system-ui, sans-serif;
-    pointer-events: none;
-    min-width: 0;
-    text-align: center;
-  ">
-</span>
-
-  
+<p id="liveScore" style="display: none; left: 10px; bottom: 10px; margin-bottom: 0px; position: absolute; font-size: 2em">LIVE SCORING ENABLED</p>
 </body>
 
 <script src="gen-config.js"></script>
@@ -67,11 +43,6 @@
 const PI = Math.PI;
 const TAU = 2*Math.PI;
 
-const LIVE_SCORING = false; //useful for testing scoring errors; 
-//however, it does not have timed scoring updated (instead it does updates with strokes) 
-//and does not have same stroke sequencing (stroke per segment) because of system limitations, so it will have some inconsistency with final score (but should match when both scores rounded to one decimal point and often to 2 decimal points). 
-//Also it has strong lag to have same number of pixels, 4096 as real score. To reduce lag reduce pixels used in live scoring
-
 var scale = window.devicePixelRatio;
 const W = COMP_TESTING ? window.innerWidth-90 : screen.height-90;
 const H = COMP_TESTING ? window.innerHeight : screen.width;
@@ -80,15 +51,17 @@ const GRID_SIZE = W/6;
 const RENDER_GRID = JSON.parse(localStorage.displayGrid) == "true";
 
 const ZOOM_SENS = 0.002;
-const MAX_ZOOM = 28; //34
+const MAX_ZOOM = 14; //34
 
 const SELECTED_FIGURE = figures[parseInt(JSON.parse(localStorage.selectedFigure))];
-const THETA_RESOLUTION_HIGH_LOD = 500;
-const THETA_RESOLUTION_LOW_LOD = 200;
+const THETA_RESOLUTION_HIGH_LOD = 700;
+const THETA_RESOLUTION_LOW_LOD = 305;
 
 const IS_TEST = JSON.parse(sessionStorage.isTest) == "true";
 const ENABLE_TIMER = IS_TEST || JSON.parse(localStorage.practiceTimer) == "true";
 const ENABLE_SCORING = IS_TEST || JSON.parse(localStorage.practiceScore) == "true";
+const LIVE_SCORING = JSON.parse(localStorage.liveScoring) == "true";
+if (LIVE_SCORING) document.getElementById("liveScore").style.display = "";
 
 const TEST_TIME_LIMIT_SEC = parseFloat(JSON.parse(localStorage.timerLengthMinutes))*60;
 const PRACTICE_TIME_LIMIT_SEC = parseFloat(JSON.parse(localStorage.practiceTimerLengthMinutes))*60;
@@ -121,6 +94,10 @@ var drawCtx = drawCanvas.getContext("2d", { willReadFrequently: false, aplha: fa
 var figureCanvas = document.getElementById('figureCanvas')
 var figureCtx = figureCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
 
+var scoreCanvas = document.getElementById('scoreCanvas')
+var scoreCtx = scoreCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
+scoreCanvas.style.display = "none";
+
 var canvasCol = document.getElementsByTagName("canvas");
 for (let i = 0; i < canvasCol.length; i++) {
     canvasCol[i].style.width = `${W}px`;
@@ -135,7 +112,7 @@ drawCtx.scale(scale, scale);
 figureCtx.scale(scale, scale);
 
 //Color of the grid
-gridCtx.strokeStyle = "grey"; //CHANGE ME!
+gridCtx.strokeStyle = "grey";
 
 drawCtx.lineCap = "round";
 drawCtx.lineJoin = "round";
@@ -172,12 +149,12 @@ var activePrompt = null;
 
 var rightHanded = true;
 
+var liveScoreDisplay = document.getElementById("liveScore");
+
 var strokes = [];
 function PenStroke (xStart, yStart, strokeColor) {
     this.x = [(xStart-offsetX)/zoom];
     this.y = [(yStart-offsetY)/zoom];
-    // this.x = [Math.round((xStart-offsetX)/zoom)];
-    // this.y = [Math.round((yStart-offsetY)/zoom)];
     this.brushSize = BRUSH_SIZE/zoom;
     this.strokeColor = strokeColor;
     lastStrokeX = xStart;
@@ -187,14 +164,8 @@ function extendCurrentStroke (rawX, rawY) {
     if (currentStroke == undefined) return;
     currentStroke.x.push((rawX-offsetX)/zoom);
     currentStroke.y.push((rawY-offsetY)/zoom);
-    // currentStroke.x.push(Math.round((rawX-offsetX)/zoom));
-    // currentStroke.y.push(Math.round((rawY-offsetY)/zoom));
     lastStrokeX = rawX;
     lastStrokeY = rawY;
-         if (LIVE_SCORING) {
-             const fs = computeFigureScale();
-             liveScoreThrottled(fs);
-     }
 }
 
 
@@ -226,6 +197,7 @@ var handedness = new Prompt("Select your dominant hand:", "rgba(240,240,240,1)",
 //Program Initialization---------------------------------------------------------------------------
 sessionStorage.isTest = JSON.stringify("false"); //Clear any previously set isTest flag 
 
+computeScoringConstants();
 mainRedraw(); //Draw main content
 
 activatePrompt(handedness); //Call handedness prompt
@@ -247,7 +219,7 @@ function mainRedraw() {
     oldGridSize = dynamicGridSize;
 
     //Limit panning
-    offsetX = clamp(offsetX, W-W*0.53*zoom, W*0.53*zoom);
+    offsetX = clamp(offsetX, W-W*0.51*zoom, W*0.51*zoom);
     offsetY = clamp(offsetY, H-H*0.53*zoom, H*0.53*zoom);
 
     //Call each canvas' redraw functions
@@ -307,6 +279,12 @@ function setHandedness(hand) {
 //Drawing Shortcuts--------------------------------------------------------------------------------
 //Easy Circle Drawing
 function circle(x, y, r, fill, ctx) {
+    if (r < 1) console.log("WARNING: Circle being drawn with radius " + r + ", potential rounding error");
+    if (r < 0.9) {
+        ctx.fillRect(x, y, 1, 1);
+        return;
+    }
+
     ctx.beginPath();
     ctx.arc(x, y, r, 0, TAU, false);
     if (fill) {
@@ -317,6 +295,8 @@ function circle(x, y, r, fill, ctx) {
 }
 //Easy Line Drawing
 function line(x, y, x2, y2, width, ctx) {
+    if (x == x2 && y == y2) console.log("WARNING: Line being drawn with idential start and endpoint");
+
     ctx.lineWidth = width;
     ctx.beginPath();
     ctx.moveTo(x, y);
