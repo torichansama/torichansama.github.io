@@ -22,7 +22,7 @@ function coordPair(innerX, innerY, outerX, outerY) {
 }
 
 //NOTE: This is the only place new figures need be added, figures take form: inner equation, outer equation
-new Figure("The Shubi", 1061818, 0, 1.4, 2.4, 0, Math.PI, (t) => {
+new Figure("The Shubi", 1067094, 0, 1.4, 2.4, 0, Math.PI, (t) => {
     if (t == PI/2) t -= 0.000000001; //Handle discontinuity at PI/2
 
     let a = 3/900*sqr(cos(7*(t+PI/2)))*sin(22*(t+PI/2))*tan((t+PI/2)/2);

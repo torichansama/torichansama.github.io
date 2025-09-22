@@ -21,50 +21,72 @@ function endTest() {
 var scoreInc = 0;
 
 function scoreFigure() {
+    console.log("Scoring...");
+
     // let progressBar = document.getElementById("progress");
 
-    drawCanvas.style.width = `${H}px`;
-    drawCanvas.style.height = `${H}px`;
+    //Resize the drawing canvas to be SCORE_AREA_SIZE, but reduce the CSS size to fit on screen so it can be seen while debugging
+    drawCanvas.style.width = `${H*3}px`;
+    drawCanvas.style.height = `${H*3}px`;
     drawCanvas.width = SCORE_AREA_SIZE; 
     drawCanvas.height = SCORE_AREA_SIZE;
-
+    
     drawCtx.clearRect(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE); //Should be wiped by canvas resize but cant be too safe
-
+    
+    //Calculate the nessecary scaling factors
     let yScale = (SCORE_AREA_SIZE/2-500)/(SELECTED_FIGURE.maxY-AVG_Y);
     let xScale = (SCORE_AREA_SIZE/2-500)/(SELECTED_FIGURE.width/2);
     let figureScale = Math.min(xScale, yScale); //Scale of figure in scoring mode
     let drawToScoreScale = figureScale/SCALE; //Realtive size of scoring figure compared to drawing figure
-
-    //Stroke Figure Outline
+    
+    //Create the inner and outer paths of the figure at scoring scale
     let minAngle = SELECTED_FIGURE.minTheta;
     let maxAngle = SELECTED_FIGURE.maxTheta;
-
-    drawCtx.strokeStyle = "black";
+    let thetaInc = (maxAngle-minAngle)/THETA_RESOLUTION_HIGH_LOD*1;
     
-    let thetaInc = (maxAngle-minAngle)/THETA_RESOLUTION_HIGH_LOD;
+    drawCtx.strokeStyle = "black";
 
-    let innerPath = new Path2D();
-    let outerPath = new Path2D();
+    let path = new Path2D();
 
-    let rads = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
-    innerPath.moveTo(rads.innerX, rads.innerY);
-    outerPath.moveTo(rads.outerX, rads.outerY);
+    // let coords = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
+    // innerPath.moveTo(coords.innerX, coords.innerY);
+    // outerPath.moveTo(coords.outerX, coords.outerY);
+    
+    // for (let theta = minAngle+thetaInc; theta <= maxAngle+thetaInc-0.01; theta += thetaInc) {
+    //     let rads = getCoordsFromFigure(theta, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
+    //     innerPath.lineTo(rads.innerX, rads.innerY);
+    //     outerPath.lineTo(rads.outerX, rads.outerY);
+    // }
 
-    for (let theta = minAngle+thetaInc; theta <= maxAngle+0.01; theta += thetaInc) {
-        let rads = getCoordsFromFigure(theta, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
-        innerPath.lineTo(rads.innerX, rads.innerY);
-        outerPath.lineTo(rads.outerX, rads.outerY);
+    let coords;
+    let initialCoords = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
+    path.moveTo(initialCoords.innerX, initialCoords.innerY);
+    
+    for (let theta = minAngle+thetaInc; theta < maxAngle; theta += thetaInc) {
+        coords = getCoordsFromFigure(theta, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
+        path.lineTo(coords.innerX, coords.innerY);
     }
 
-    drawCtx.stroke(innerPath);
-    drawCtx.stroke(outerPath);
+    coords = getCoordsFromFigure(maxAngle, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
+    path.lineTo(coords.innerX, coords.innerY);
+    path.lineTo(coords.outerX, coords.outerY);
+
+    for (let theta = maxAngle-thetaInc; theta > 0; theta -= thetaInc) {
+        coords = getCoordsFromFigure(theta, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
+        path.lineTo(coords.outerX, coords.outerY);
+    }
+
+    path.lineTo(initialCoords.outerX, initialCoords.outerY);
+    path.lineTo(initialCoords.innerX, initialCoords.innerY);
 
     //Drawing strokes using one continuous line
     drawCtx.strokeStyle = "red";
     drawCtx.fillStyle = "red";
     drawCtx.lineCap = "round";
     drawCtx.lineJoin = "round";
-    // circle(Math.round(0*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(0*drawToScoreScale+SCORE_AREA_SIZE/2), 50, true, drawCtx);
+
+    //If were looking to find the maximum score, fill entire screen with "stroke"
+    if (FIND_MAX_SCORE) drawCtx.fillRect(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE);
 
     strokes.forEach(stroke => {
         if (stroke.strokeColor == DRAW_COLOR) {
@@ -76,7 +98,6 @@ function scoreFigure() {
 
         if (stroke.x.length == 1) { //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
             circle(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2), stroke.brushSize*drawToScoreScale, true, drawCtx);
-            // circle(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2), 100, true, drawCtx);
             return;
         }
 
@@ -88,58 +109,61 @@ function scoreFigure() {
         }
     });
 
-    //Score strokes against figure 
+    let debugImgData = drawCtx.createImageData(SCORE_AREA_SIZE, SCORE_AREA_SIZE);
+
+    //Grab the image data of the strokes before masking takes place
+    let preMaskImgData = drawCtx.getImageData(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE);
+
+    //Mask only the figure
+    drawCtx.globalCompositeOperation = "source-in";
+    drawCtx.fill(path);
+        
+    //For each drawn pixel inside the figure remaining after masking, count it to the score and remove the respective pixel from the pre-masked image data
     let imgData = drawCtx.getImageData(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE);
-    mainScoreLoop(0, imgData, figureScale, progressBar);
-}
-
-function mainScoreLoop(startingOffset, imgData, figureScale, progressBar) {
-    let i = startingOffset;
-    while (i < startingOffset+imgData.data.length/8) { //WARNING! This divisor MUST be a multiple of 4 to prevent erronous scoring
-        if (imgData.data[i] == 0 && !FIND_MAX_SCORE) { //Skip blank pixels
-            i += 4;
-            continue;
-        }
-
-        let x = (i / 4) % SCORE_AREA_SIZE - SCORE_AREA_SIZE/2;
-        let y = Math.floor((i / 4) / SCORE_AREA_SIZE) - SCORE_AREA_SIZE/2 - AVG_Y*figureScale;
-        // let y = Math.floor((i / 4) / SCORE_AREA_SIZE) - SCORE_AREA_SIZE/2;
-        let theta = -Math.atan2(y, x);
-        let pixelR = Math.hypot(x, y);
-        let figureCoords = getCoordsFromFigure(theta, figureScale, 0, -AVG_Y*figureScale);
-        let innerR = Math.hypot(figureCoords.innerX, -figureCoords.innerY);
-        let outerR = Math.hypot(figureCoords.outerX, -figureCoords.outerY);
-
-        if (pixelR >= innerR && pixelR <= outerR) {
-            imgData.data[i+1] = 255;
-            imgData.data[i+3] = 255;
+    for (let i = 0; i < imgData.data.length; i += 4) {
+        if (imgData.data[i] != 0) {
             scoreInc++;
-        } else if (!FIND_MAX_SCORE){
-            imgData.data[i+2] = 255;
-            imgData.data[i+3] = 255;
+            debugImgData.data[i+1] = 255;
+            debugImgData.data[i+3] = 255;
+            preMaskImgData.data[i] = 0;
+        }
+    }
+
+    //At this point, only positive scoring has taken place
+    if (FIND_MAX_SCORE) {
+        console.log("Maximum possible score: " + scoreInc);
+        return;
+    }
+
+    //The pre-mask image data is now reverse masked by the figure, meaning all remaing pixels are blank or outside of the figure
+    for (let i = 0; i < preMaskImgData.data.length; i += 4) {
+        if (preMaskImgData.data[i] != 0) {
             scoreInc--;
+            debugImgData.data[i] = 255;
+            debugImgData.data[i+3] = 255;
         }
-        if (pixelR < 30 && SCORE_DEBUG) { //Show 0,0
-            imgData.data[i+2] = 255;
-            imgData.data[i+3] = 255;
-        }
-        i += 4;
     }
 
-    progressBar.value = i/imgData.data.length;
+    drawCtx.putImageData(debugImgData, 0, 0);
+    drawCtx.globalCompositeOperation = "destination-over";
+    drawCtx.strokeStyle = "black";
+    drawCtx.lineWidth = 3;
+    drawCtx.stroke(path);
 
-    if (i < imgData.data.length) {
-        setTimeout(()=>{mainScoreLoop(i, imgData, figureScale, progressBar)}, 0);
-    } else {
-        saveScore(imgData);
-    }
+    // drawCtx.putImageData(imgData, 0, 0);
+
+    // progressBar.value = i/imgData.data.length;
+
+    // if (i < imgData.data.length) {
+    //     setTimeout(()=>{mainScoreLoop(i, imgData, figureScale, progressBar)}, 0);
+    // } else {
+        saveScore();
+    // }
 }
 
-function saveScore(imgData) {
-    drawCtx.putImageData(imgData, 0, 0);
-
+function saveScore() {
     if (FIND_MAX_SCORE || SCORE_DEBUG) { //Alert the max score
-        alert(scoreInc);
+        // alert(scoreInc);
         console.log(scoreInc);
     }
     
