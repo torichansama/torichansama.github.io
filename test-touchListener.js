@@ -126,6 +126,8 @@ figureCanvas.addEventListener("touchend", e => { //Clear the Eraser Outline
         strokes.push(currentStroke); //Store currentStroke if its still in limbo
         circle(lastStrokeX, lastStrokeY, BRUSH_SIZE, true, drawCtx);
     }
+
+    if (LIVE_SCORING) scoreFigure();
 });
 
 //Wheel Listener-----------------------------------------------------------------------------------

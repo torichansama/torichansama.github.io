@@ -7,6 +7,7 @@
 
 <body>
 <!-- Canvas stack for background grid, drawing, and rendering the figure -->
+<canvas id="scoreCanvas"></canvas>
 <canvas id="gridCanvas"></canvas>    
 <canvas id="drawCanvas"></canvas>    
 <canvas id="figureCanvas"></canvas>
@@ -27,6 +28,8 @@
         <button class="toggleButton" id="eraser" onclick="setBrush(ERASE_COLOR)"><i class="fa fa-eraser"></i></button>
     </div>
 </div>
+
+<p id="liveScore" style="display: none; left: 10px; bottom: 10px; margin-bottom: 0px; position: absolute; font-size: 2em">LIVE SCORING ENABLED</p>
 </body>
 
 <script src="gen-config.js"></script>
@@ -48,7 +51,7 @@ const GRID_SIZE = W/6;
 const RENDER_GRID = JSON.parse(localStorage.displayGrid) == "true";
 
 const ZOOM_SENS = 0.002;
-const MAX_ZOOM = 22; //34
+const MAX_ZOOM = 14; //34
 
 const SELECTED_FIGURE = figures[parseInt(JSON.parse(localStorage.selectedFigure))];
 const THETA_RESOLUTION_HIGH_LOD = 700;
@@ -57,6 +60,8 @@ const THETA_RESOLUTION_LOW_LOD = 305;
 const IS_TEST = JSON.parse(sessionStorage.isTest) == "true";
 const ENABLE_TIMER = IS_TEST || JSON.parse(localStorage.practiceTimer) == "true";
 const ENABLE_SCORING = IS_TEST || JSON.parse(localStorage.practiceScore) == "true";
+const LIVE_SCORING = JSON.parse(localStorage.liveScoring) == "true";
+if (LIVE_SCORING) document.getElementById("liveScore").style.display = "";
 
 const TEST_TIME_LIMIT_SEC = parseFloat(JSON.parse(localStorage.timerLengthMinutes))*60;
 const PRACTICE_TIME_LIMIT_SEC = parseFloat(JSON.parse(localStorage.practiceTimerLengthMinutes))*60;
@@ -89,6 +94,10 @@ var drawCtx = drawCanvas.getContext("2d", { willReadFrequently: false, aplha: fa
 var figureCanvas = document.getElementById('figureCanvas')
 var figureCtx = figureCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
 
+var scoreCanvas = document.getElementById('scoreCanvas')
+var scoreCtx = scoreCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
+scoreCanvas.style.display = "none";
+
 var canvasCol = document.getElementsByTagName("canvas");
 for (let i = 0; i < canvasCol.length; i++) {
     canvasCol[i].style.width = `${W}px`;
@@ -103,7 +112,7 @@ drawCtx.scale(scale, scale);
 figureCtx.scale(scale, scale);
 
 //Color of the grid
-gridCtx.strokeStyle = "grey"; //CHANGE ME!
+gridCtx.strokeStyle = "grey";
 
 drawCtx.lineCap = "round";
 drawCtx.lineJoin = "round";
@@ -140,12 +149,12 @@ var activePrompt = null;
 
 var rightHanded = true;
 
+var liveScoreDisplay = document.getElementById("liveScore");
+
 var strokes = [];
 function PenStroke (xStart, yStart, strokeColor) {
     this.x = [(xStart-offsetX)/zoom];
     this.y = [(yStart-offsetY)/zoom];
-    // this.x = [Math.round((xStart-offsetX)/zoom)];
-    // this.y = [Math.round((yStart-offsetY)/zoom)];
     this.brushSize = BRUSH_SIZE/zoom;
     this.strokeColor = strokeColor;
     lastStrokeX = xStart;
@@ -155,8 +164,6 @@ function extendCurrentStroke (rawX, rawY) {
     if (currentStroke == undefined) return;
     currentStroke.x.push((rawX-offsetX)/zoom);
     currentStroke.y.push((rawY-offsetY)/zoom);
-    // currentStroke.x.push(Math.round((rawX-offsetX)/zoom));
-    // currentStroke.y.push(Math.round((rawY-offsetY)/zoom));
     lastStrokeX = rawX;
     lastStrokeY = rawY;
 }
@@ -190,6 +197,7 @@ var handedness = new Prompt("Select your dominant hand:", "rgba(240,240,240,1)",
 //Program Initialization---------------------------------------------------------------------------
 sessionStorage.isTest = JSON.stringify("false"); //Clear any previously set isTest flag 
 
+computeScoringConstants();
 mainRedraw(); //Draw main content
 
 activatePrompt(handedness); //Call handedness prompt
@@ -272,6 +280,10 @@ function setHandedness(hand) {
 //Easy Circle Drawing
 function circle(x, y, r, fill, ctx) {
     if (r < 1) console.log("WARNING: Circle being drawn with radius " + r + ", potential rounding error");
+    if (r < 0.9) {
+        ctx.fillRect(x, y, 1, 1);
+        return;
+    }
 
     ctx.beginPath();
     ctx.arc(x, y, r, 0, TAU, false);
