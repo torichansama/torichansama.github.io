@@ -187,7 +187,7 @@ var timerExpired = new Prompt("Timer Expired.", "rgba(0,0,0,0.3)", [
     new PromptElement("button", "fa fa-arrow-right", "green", endTest),
 ]);
 var loading = new Prompt("Scoring...", "rgba(240,240,240,1)", [
-    new PromptElement("progress", "fa fa-arrow-right", "green", endTest),
+    new PromptElement("throbber", "fa fa-arrow-right", "green", endTest),
 ]);
 var handedness = new Prompt("Select your dominant hand:", "rgba(240,240,240,1)", [
     new PromptElement("button", "L", "black", ()=>{setHandedness("left")}),

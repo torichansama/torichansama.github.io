@@ -61,13 +61,11 @@ function initializePrompt(prompt) {
             button.appendChild(content)
 
             buttons.appendChild(button);
-        } else if (PromptElement.elementType == "progress") {
-            let progress = document.createElement("progress");
-            progress.id = "progress";
-            progress.value = 0;
-            progress.max = 1;
+        } else if (PromptElement.elementType == "throbber") {
+            let throbber = document.createElement("div");
+            throbber.className = "loader";
 
-            buttons.appendChild(progress);
+            buttons.appendChild(throbber);
         }
     });
 
