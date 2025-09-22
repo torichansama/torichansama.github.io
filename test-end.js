@@ -46,38 +46,22 @@ function scoreFigure() {
     
     drawCtx.strokeStyle = "black";
 
-    let path = new Path2D();
+    let innerPath = new Path2D();
+    let outerPath = new Path2D();
 
-    // let coords = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
-    // innerPath.moveTo(coords.innerX, coords.innerY);
-    // outerPath.moveTo(coords.outerX, coords.outerY);
-    
-    // for (let theta = minAngle+thetaInc; theta <= maxAngle+thetaInc-0.01; theta += thetaInc) {
-    //     let rads = getCoordsFromFigure(theta, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
-    //     innerPath.lineTo(rads.innerX, rads.innerY);
-    //     outerPath.lineTo(rads.outerX, rads.outerY);
-    // }
-
-    let coords;
-    let initialCoords = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
-    path.moveTo(initialCoords.innerX, initialCoords.innerY);
+    let coords = getCoordsFromFigure(minAngle, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
+    innerPath.moveTo(coords.innerX, coords.innerY);
+    outerPath.moveTo(coords.outerX, coords.outerY);
     
     for (let theta = minAngle+thetaInc; theta < maxAngle; theta += thetaInc) {
         coords = getCoordsFromFigure(theta, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
-        path.lineTo(coords.innerX, coords.innerY);
+        innerPath.lineTo(coords.innerX, coords.innerY);
+        outerPath.lineTo(coords.outerX, coords.outerY);
     }
 
     coords = getCoordsFromFigure(maxAngle, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
-    path.lineTo(coords.innerX, coords.innerY);
-    path.lineTo(coords.outerX, coords.outerY);
-
-    for (let theta = maxAngle-thetaInc; theta > 0; theta -= thetaInc) {
-        coords = getCoordsFromFigure(theta, figureScale, SCORE_AREA_SIZE/2, SCORE_AREA_SIZE/2);
-        path.lineTo(coords.outerX, coords.outerY);
-    }
-
-    path.lineTo(initialCoords.outerX, initialCoords.outerY);
-    path.lineTo(initialCoords.innerX, initialCoords.innerY);
+    innerPath.lineTo(coords.innerX, coords.innerY);
+    outerPath.lineTo(coords.outerX, coords.outerY);
 
     //Drawing strokes using one continuous line
     drawCtx.strokeStyle = "red";
@@ -116,7 +100,9 @@ function scoreFigure() {
 
     //Mask only the figure
     drawCtx.globalCompositeOperation = "source-in";
-    drawCtx.fill(path);
+    drawCtx.fill(outerPath);
+    drawCtx.globalCompositeOperation = "destination-out";
+    drawCtx.fill(innerPath);
         
     //For each drawn pixel inside the figure remaining after masking, count it to the score and remove the respective pixel from the pre-masked image data
     let imgData = drawCtx.getImageData(0, 0, SCORE_AREA_SIZE, SCORE_AREA_SIZE);
@@ -148,7 +134,8 @@ function scoreFigure() {
     drawCtx.globalCompositeOperation = "destination-over";
     drawCtx.strokeStyle = "black";
     drawCtx.lineWidth = 3;
-    drawCtx.stroke(path);
+    drawCtx.stroke(innerPath);
+    drawCtx.stroke(outerPath);
 
     // drawCtx.putImageData(imgData, 0, 0);
 
