@@ -11,10 +11,10 @@ function correctTouches(touches) {
 
 var debugShiftKey = false;
 document.addEventListener('keydown', function(event) {
-  debugShiftKey = event.shiftKey;
+    if (currentStroke == undefined) debugShiftKey = event.shiftKey;
 });
 document.addEventListener('keyup', function(event) {
-    debugShiftKey = event.shiftKey;
+    if (currentStroke == undefined) debugShiftKey = event.shiftKey;
 });
 
 function Touch(pageX, pageY, touchType) {
@@ -34,7 +34,7 @@ figureCanvas.addEventListener("touchstart", e => {
     if (activePrompt) return; //Any Prompt is Active
 
     if ((DRAW_W_FINGER && touches.length == 1) || touch.touchType == "stylus") { //Single finger/stylus draw
-        currentStroke = new PenStroke(touch.pageX, touch.pageY, brushColor); //Creates a stroke in limbo
+        currentStroke = new PenStroke(touch.pageX, touch.pageY, brushColor, zoom); //Creates a stroke in limbo
         
         drawCtx.fillStyle = brushColor;
         drawCtx.strokeStyle = brushColor;
@@ -64,6 +64,7 @@ figureCanvas.addEventListener("touchstart", e => {
 
 //TouchMove Listener-------------------------------------------------------------------------------
 figureCanvas.addEventListener("touchmove", e => {
+
     touches = correctTouches(e.touches);
     let touch = touches[0];
     let touchX = touch.pageX; 
@@ -81,7 +82,7 @@ figureCanvas.addEventListener("touchmove", e => {
         gridCtxRedraw();
         
         line(lastStrokeX, lastStrokeY, touchX, touchY, BRUSH_SIZE*2, drawCtx);
-        extendCurrentStroke(touchX, touchY);
+        extendCurrentStroke(touchX, touchY, zoom);
         
         if (brushColor == ERASE_COLOR) {
             gridCtx.lineWidth = 1.5;
@@ -126,6 +127,7 @@ figureCanvas.addEventListener("touchend", e => { //Clear the Eraser Outline
         strokes.push(currentStroke); //Store currentStroke if its still in limbo
         circle(lastStrokeX, lastStrokeY, BRUSH_SIZE, true, drawCtx);
     }
+    currentStroke = undefined;
 
     if (LIVE_SCORING) scoreFigure();
 });

@@ -152,7 +152,7 @@ var rightHanded = true;
 var liveScoreDisplay = document.getElementById("liveScore");
 
 var strokes = [];
-function PenStroke (xStart, yStart, strokeColor) {
+function PenStroke (xStart, yStart, strokeColor, zoom) {
     this.x = [(xStart-offsetX)/zoom];
     this.y = [(yStart-offsetY)/zoom];
     this.brushSize = BRUSH_SIZE/zoom;
@@ -160,7 +160,7 @@ function PenStroke (xStart, yStart, strokeColor) {
     lastStrokeX = xStart;
     lastStrokeY = yStart;
 }
-function extendCurrentStroke (rawX, rawY) {
+function extendCurrentStroke (rawX, rawY, zoom) {
     if (currentStroke == undefined) return;
     currentStroke.x.push((rawX-offsetX)/zoom);
     currentStroke.y.push((rawY-offsetY)/zoom);

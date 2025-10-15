@@ -83,14 +83,15 @@ function scoreFigure() {
         }
         scoreCtx.lineWidth = stroke.brushSize*2*drawToScoreScale;
 
-        if (stroke.x.length == 1) { //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
+        if (stroke.x.length == 1 || Math.hypot(stroke.x[0]-stroke.x[stroke.x.length-1], stroke.y[0]-stroke.y[stroke.x.length-1]) == 0) { //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
             circle(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2), stroke.brushSize*drawToScoreScale, true, scoreCtx);
             return;
         }
 
         scoreCtx.beginPath();
         scoreCtx.moveTo(Math.round(stroke.x[0]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[0]*drawToScoreScale+SCORE_AREA_SIZE/2))
-        for (let i = 0; i < stroke.x.length; i++) {
+        // for (let i = 0; i < stroke.x.length; i++) {
+        for (let i = 1; i < stroke.x.length; i++) {
             scoreCtx.lineTo(Math.round(stroke.x[i]*drawToScoreScale+SCORE_AREA_SIZE/2), Math.round(stroke.y[i]*drawToScoreScale+SCORE_AREA_SIZE/2));
             scoreCtx.stroke();
         }
