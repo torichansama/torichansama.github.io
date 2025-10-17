@@ -113,7 +113,7 @@ function scoreFigure() {
             
                     //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
                     if (stroke.x.length == 1 || Math.hypot(stroke.x[0]-stroke.x[stroke.x.length-1], stroke.y[0]-stroke.y[stroke.x.length-1]) == 0) { 
-                        console.log(stroke.brushSize*drawToScoreScale);
+                        // console.log(stroke.brushSize*drawToScoreScale);
                         circle(Math.round(stroke.x[0]*drawToScoreScale+score_area_midpoint), Math.round(stroke.y[0]*drawToScoreScale+score_area_midpoint), stroke.brushSize*drawToScoreScale, true, scoreCtx);
                         return;
                     }
@@ -188,7 +188,7 @@ function scoreFigure() {
 
     console.log("Score: " + scoreInc);
 
-    if (LIVE_SCORING) liveScoreDisplay.innerHTML = "INC: " + scoreInc + " | Percent Score: " + Math.round(scoreInc/SELECTED_FIGURE.maxScore*100*10000)/10000;
+    if (LIVE_SCORING) liveScoreDisplay.innerHTML = "INC: " + scoreInc + " | Percent Score: " + Math.round(scoreInc/SELECTED_FIGURE.maxScore*100*1000000)/1000000;
 
     if (isFinalScoring && !FIND_MAX_SCORE && !SCORE_DEBUG) {
         saveScore();
