@@ -26,7 +26,7 @@ function coordPair(innerX, innerY, outerX, outerY) {
 //  14576407 - Tested Value with Tiling      
 //  17073504 - Expected value based off scale increase
 //  17011848 - Current max score
-new Figure("The Shubi", 17011848, 0, 1.4, 2.4, 0, Math.PI, (t) => {
+new Figure("The Shubi", 4258493, 0, 1.4, 2.4, 0, Math.PI, (t) => {
     if (t == PI/2) t -= 0.000000001; //Handle discontinuity at PI/2
 
     let a = 3/900*sqr(cos(7*(t+PI/2)))*sin(22*(t+PI/2))*tan((t+PI/2)/2);
