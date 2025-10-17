@@ -84,7 +84,6 @@ function computeScoringConstants() {
 
 function scoreFigure() {
     scoreInc = 0;
-    console.log("Begin Scoring - " + Date.now());
 
     let strokePaths = [];
     for (let i = 0; i < strokes.length; i++) {
@@ -105,7 +104,6 @@ function scoreFigure() {
         strokePaths[i] = path;
     };
 
-    console.log("Paths Created - " + Date.now());
     for (let x = 0; x < SCORE_CANVAS_TILES_W; x++) { //Iterate through scoring tiles and set the context each time
         for (let y = 0; y < SCORE_CANVAS_TILES_W; y++) {
             scoreCtx = scoringTileContexts[x][y];
