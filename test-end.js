@@ -28,9 +28,12 @@ var scoringTileContexts;
 var score_area_total_size;
 var score_area_midpoint;
 var canvasToDisplay = "1|1";
+// var workers;
+// var workersNeedingResponse = 0;
 
 function computeScoringConstants() {
     scoringTileContexts = Array.from({ length: SCORE_CANVAS_TILES_W }, () => new Array(SCORE_CANVAS_TILES_W));
+    workers = Array.from({ length: SCORE_CANVAS_TILES_W }, () => new Array(SCORE_CANVAS_TILES_W));
 
     //Create canvas tiles
     for (let x = 0; x < SCORE_CANVAS_TILES_W; x++) {
@@ -46,7 +49,7 @@ function computeScoringConstants() {
             canvas.style.display = "none";
 
             document.body.appendChild(canvas);
-            scoringTileContexts[x][y] = canvas.getContext("2d", { willReadFrequently: false, aplha: false });
+            scoringTileContexts[x][y] = canvas.getContext("2d", { willReadFrequently: true, aplha: false });
         }
     }
 
@@ -81,15 +84,33 @@ function computeScoringConstants() {
 
 function scoreFigure() {
     scoreInc = 0;
-    console.log("Scoring...");
+    console.log("Begin Scoring - " + Date.now());
 
+    let strokePaths = [];
+    for (let i = 0; i < strokes.length; i++) {
+        let stroke = strokes[i];
+        let path = new Path2D();
+
+        //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
+        //TODO: Removoe this hypot computation - probably unnessecary
+        if (stroke.x.length == 1 || Math.hypot(stroke.x[0]-stroke.x[stroke.x.length-1], stroke.y[0]-stroke.y[stroke.x.length-1]) == 0) { 
+            console.log(stroke.brushSize*drawToScoreScale);
+            path.arc(Math.round(stroke.x[0]*drawToScoreScale+score_area_midpoint), Math.round(stroke.y[0]*drawToScoreScale+score_area_midpoint), stroke.brushSize*drawToScoreScale, 0, TAU, false);
+        } else {
+            path.moveTo(Math.round(stroke.x[0]*drawToScoreScale+score_area_midpoint), Math.round(stroke.y[0]*drawToScoreScale+score_area_midpoint))
+            for (let i = 1; i < stroke.x.length; i++) {
+                path.lineTo(Math.round(stroke.x[i]*drawToScoreScale+score_area_midpoint), Math.round(stroke.y[i]*drawToScoreScale+score_area_midpoint));
+            }
+        }
+        strokePaths[i] = path;
+    };
+
+    console.log("Paths Created - " + Date.now());
     for (let x = 0; x < SCORE_CANVAS_TILES_W; x++) { //Iterate through scoring tiles and set the context each time
         for (let y = 0; y < SCORE_CANVAS_TILES_W; y++) {
             scoreCtx = scoringTileContexts[x][y];
             tilingOffsetX = SCORE_AREA_TILE_SIZE*x;
             tilingOffsetY = SCORE_AREA_TILE_SIZE*y;
-
-            let displayDebugInfoForCanvas = isFinalScoring && SCORE_DEBUG && x+"|"+y == canvasToDisplay;
 
             scoreCtx.clearRect(0, 0, score_area_total_size, score_area_total_size); //Clear canvas before we start
 
@@ -103,7 +124,8 @@ function scoreFigure() {
             if (FIND_MAX_SCORE) {scoreCtx.fillRect(0, 0, score_area_total_size, score_area_total_size);}
             else {
                 scoreCtx.translate(-tilingOffsetX, -tilingOffsetY);
-                strokes.forEach(stroke => { //Draw the strokes to canavs
+                for (let i = 0; i < strokes.length; i++) {
+                    let stroke = strokes[i];
                     if (stroke.strokeColor == DRAW_COLOR) {
                         scoreCtx.globalCompositeOperation = "source-over";
                     } else {
@@ -112,24 +134,16 @@ function scoreFigure() {
                     scoreCtx.lineWidth = stroke.brushSize*2*drawToScoreScale;
             
                     //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
+                    //TODO: Removoe this hypot computation - probably unnessecary
                     if (stroke.x.length == 1 || Math.hypot(stroke.x[0]-stroke.x[stroke.x.length-1], stroke.y[0]-stroke.y[stroke.x.length-1]) == 0) { 
-                        console.log(stroke.brushSize*drawToScoreScale);
-                        circle(Math.round(stroke.x[0]*drawToScoreScale+score_area_midpoint), Math.round(stroke.y[0]*drawToScoreScale+score_area_midpoint), stroke.brushSize*drawToScoreScale, true, scoreCtx);
-                        return;
+                        scoreCtx.fill(strokePaths[i]);
+                    } else {
+                        scoreCtx.stroke(strokePaths[i]);
                     }
-            
-                    scoreCtx.beginPath();
-                    scoreCtx.moveTo(Math.round(stroke.x[0]*drawToScoreScale+score_area_midpoint), Math.round(stroke.y[0]*drawToScoreScale+score_area_midpoint))
-                    for (let i = 1; i < stroke.x.length; i++) {
-                        scoreCtx.lineTo(Math.round(stroke.x[i]*drawToScoreScale+score_area_midpoint), Math.round(stroke.y[i]*drawToScoreScale+score_area_midpoint));
-                        scoreCtx.stroke();
-                    }
-                });
+                }
                 scoreCtx.translate(tilingOffsetX, tilingOffsetY);
             }
 
-            //Create an empty image data that will be used to show a debug rendering
-            let debugImgData = scoreCtx.createImageData(SCORE_AREA_TILE_SIZE, SCORE_AREA_TILE_SIZE);
 
             //Grab the image data of the strokes before masking takes place
             let preMaskImgData = scoreCtx.getImageData(0, 0, SCORE_AREA_TILE_SIZE, SCORE_AREA_TILE_SIZE);
@@ -144,39 +158,19 @@ function scoreFigure() {
 
             //For each drawn pixel inside the figure remaining after masking, count it to the score and remove the respective pixel from the pre-masked image data
             let imgData = scoreCtx.getImageData(0, 0, SCORE_AREA_TILE_SIZE, SCORE_AREA_TILE_SIZE);
+
             for (let i = 0; i < imgData.data.length; i += 4) {
                 if (imgData.data[i] != 0) {
                     scoreInc++;
-                    if (displayDebugInfoForCanvas) {
-                        debugImgData.data[i+1] = 255;
-                        debugImgData.data[i+3] = 255;
-                    }
                     preMaskImgData.data[i] = 0;
                 }
             }
-
+        
             //The pre-mask image data is now reverse masked by the figure, meaning all remaing pixels are blank or outside of the figure
             for (let i = 0; i < preMaskImgData.data.length; i += 4) {
                 if (preMaskImgData.data[i] != 0) {
                     if (!FIND_MAX_SCORE) scoreInc--;
-                    if (displayDebugInfoForCanvas) {
-                        debugImgData.data[i] = 255;
-                        debugImgData.data[i+3] = 255;
-                    }
                 }
-            }
-
-            //Show color coded debug rendering if its enabled
-            if (displayDebugInfoForCanvas) {
-                document.getElementById(canvasToDisplay).style.display = ""; //Show selected canvas for the score debug
-                scoreCtx.putImageData(debugImgData, 0, 0);
-                scoreCtx.globalCompositeOperation = "destination-over";
-                scoreCtx.strokeStyle = "black";
-                scoreCtx.lineWidth = 10;
-                scoreCtx.translate(-tilingOffsetX, -tilingOffsetY);
-                scoreCtx.stroke(innerPath);
-                scoreCtx.stroke(outerPath);
-                scoreCtx.translate(tilingOffsetX, tilingOffsetY);
             }
         }
     }
@@ -186,9 +180,10 @@ function scoreFigure() {
         return;
     }
 
+    console.log("Finished Scoring - " + Date.now());
     console.log("Score: " + scoreInc);
 
-    if (LIVE_SCORING) liveScoreDisplay.innerHTML = "INC: " + scoreInc + " | Percent Score: " + Math.round(scoreInc/SELECTED_FIGURE.maxScore*100*10000)/10000;
+    if (LIVE_SCORING) liveScoreDisplay.innerHTML = "INC: " + scoreInc + " | Percent Score: " + Math.round(scoreInc/SELECTED_FIGURE.maxScore*100*1000000)/1000000;
 
     if (isFinalScoring && !FIND_MAX_SCORE && !SCORE_DEBUG) {
         saveScore();
