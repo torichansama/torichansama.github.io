@@ -61,6 +61,8 @@ figureCanvas.addEventListener("touchstart", e => {
         zoomY = centerY;
     }
 
+    setDebugInfo("OffsetX", Math.round(offsetX*100)/100);
+    setDebugInfo("OffsetY", Math.round(offsetY*100)/100);
     setDebugInfo("TouchState", "Start");
 })
 
