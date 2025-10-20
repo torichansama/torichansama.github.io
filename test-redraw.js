@@ -36,6 +36,8 @@ function gridCtxRedraw() {
         gridCtx.stroke();
         i++;
     }
+
+    if (DEBUG_VIEW) updateDebugView();
 }
 
 //Drawing the content of the draw canvas-----------------------------------------------------------

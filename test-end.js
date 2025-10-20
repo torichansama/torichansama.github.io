@@ -82,6 +82,7 @@ function computeScoringConstants() {
 function scoreFigure() {
     scoreInc = 0;
     console.log("Scoring...");
+    let minRad = 999;
 
     for (let x = 0; x < SCORE_CANVAS_TILES_W; x++) { //Iterate through scoring tiles and set the context each time
         for (let y = 0; y < SCORE_CANVAS_TILES_W; y++) {
@@ -114,6 +115,7 @@ function scoreFigure() {
                     //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
                     if (stroke.x.length == 1 || Math.hypot(stroke.x[0]-stroke.x[stroke.x.length-1], stroke.y[0]-stroke.y[stroke.x.length-1]) == 0) { 
                         // console.log(stroke.brushSize*drawToScoreScale);
+                        minRad = Math.min(minRad, stroke.brushSize*drawToScoreScale);
                         circle(Math.round(stroke.x[0]*drawToScoreScale+score_area_midpoint), Math.round(stroke.y[0]*drawToScoreScale+score_area_midpoint), stroke.brushSize*drawToScoreScale, true, scoreCtx);
                         return;
                     }
@@ -180,6 +182,8 @@ function scoreFigure() {
             }
         }
     }
+
+    setDebugInfo("MinScoreRad", Math.round(minRad*100)/100);
     
     if (FIND_MAX_SCORE) {
         console.log("Maximum possible score: " + scoreInc);

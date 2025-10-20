@@ -130,7 +130,6 @@ var offsetY = H/2+50;
 var zoomX = 0;
 var zoomY = 0;
 var zoom = 1;
-
 var zoomGestureDist;
 var panX;
 var panY;
@@ -145,10 +144,10 @@ var lastStrokeY;
 var brushColor;
 
 var activePrompt = null;
-
 var rightHanded = true;
 
 var liveScoreDisplay = document.getElementById("liveScore");
+var debugData = [];
 
 var strokes = [];
 function PenStroke (xStart, yStart, strokeColor, zoom) {
@@ -227,6 +226,36 @@ function mainRedraw() {
     figureCtxRedraw();
 }    
 
+
+function updateDebugView() {
+    gridCtx.font = "35px Arial";
+    gridCtx.strokeStyle = "black";
+    gridCtx.textBaseline = "bottom";
+    gridCtx.textAlign = "right";
+
+    for (let i = 0; i < debugData.length; i++) {
+        gridCtx.fillText(debugData[i],W-touchXOffset-10,H-i*50);
+    }
+}
+
+function setDebugInfo(index, infoString) {
+    if (!DEBUG_VIEW) return;
+
+    for (let i = 0; i <= debugData.length; i++) {
+        if (i == debugData.length) { //index is not in debugData, add it
+            debugData.push(index + ": " + infoString);
+            break;
+        }
+
+        let key = debugData[i].split(":")[0]; //index found in debugData, update it
+        if (key == index) {
+            debugData[i] = key + ": " + infoString;
+            break;
+        }
+    }
+
+    gridCtxRedraw();
+}
 
 //Toggle button between brush and eraser-----------------------------------------------------------
 function setBrush(color) {

@@ -60,6 +60,8 @@ figureCanvas.addEventListener("touchstart", e => {
         zoomX = centerX;
         zoomY = centerY;
     }
+
+    setDebugInfo("TouchState", "Start");
 })
 
 //TouchMove Listener-------------------------------------------------------------------------------
@@ -118,12 +120,19 @@ figureCanvas.addEventListener("touchmove", e => {
 
         mainRedraw();
     }
+
+    setDebugInfo("TouchState", "Move");
 })
 
 //TouchEnd Listener--------------------------------------------------------------------------------
 figureCanvas.addEventListener("touchend", e => { //Clear the Eraser Outline
     gridCtxRedraw();
+
+    setDebugInfo("TouchState", "End");
+
     if (!strokes.includes(currentStroke) && currentStroke != undefined) {
+        setDebugInfo("TouchState", "End-undef");
+
         strokes.push(currentStroke); //Store currentStroke if its still in limbo
         circle(lastStrokeX, lastStrokeY, BRUSH_SIZE, true, drawCtx);
     }
@@ -131,6 +140,10 @@ figureCanvas.addEventListener("touchend", e => { //Clear the Eraser Outline
         currentStroke = undefined;
         if (LIVE_SCORING) scoreFigure();
     }
+    
+    setDebugInfo("Raw Tx", Math.round(strokes[strokes.length-1].x[0]*100)/100);
+    setDebugInfo("Raw Ty", Math.round(strokes[strokes.length-1].y[0]*100)/100);
+    setDebugInfo("BrushSize", Math.round(strokes[strokes.length-1].brushSize*100)/100);
 });
 
 //Wheel Listener-----------------------------------------------------------------------------------
