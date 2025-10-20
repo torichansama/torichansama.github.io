@@ -84,7 +84,7 @@ function scoreFigure() {
     console.log("Scoring...");
     let DEBUG_minRad = 999;
     let DEBUG_lastX = 0;
-    let DEBUG_lastRounded = false;
+    let DEBUG_lastRounded = "false";
     let DEBUG_lastY = 0;
 
     for (let x = 0; x < SCORE_CANVAS_TILES_W; x++) { //Iterate through scoring tiles and set the context each time
@@ -121,7 +121,7 @@ function scoreFigure() {
                     //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
                     if (stroke.x.length == 1 || Math.hypot(stroke.x[0]-stroke.x[stroke.x.length-1], stroke.y[0]-stroke.y[stroke.x.length-1]) < 4) { 
                         // console.log(stroke.brushSize*drawToScoreScale);
-                        DEBUG_lastRounded = true;
+                        DEBUG_lastRounded = "true";
                         DEBUG_minRad = Math.min(DEBUG_minRad, stroke.brushSize*drawToScoreScale);
                         circle(Math.round(stroke.x[0]*drawToScoreScale+score_area_midpoint), Math.round(stroke.y[0]*drawToScoreScale+score_area_midpoint), stroke.brushSize*drawToScoreScale, true, scoreCtx);
                         return;
@@ -193,8 +193,8 @@ function scoreFigure() {
 
     setDebugInfo("LastRounded", DEBUG_lastRounded);
     setDebugInfo("MinScoreRad", Math.round(DEBUG_minRad*100)/100);
-    setDebugInfo("LastScoreX", DEBUG_lastX);
-    setDebugInfo("LastScoreY", DEBUG_lastY);
+    // setDebugInfo("LastScoreX", DEBUG_lastX);
+    // setDebugInfo("LastScoreY", DEBUG_lastY);
     
     if (FIND_MAX_SCORE) {
         console.log("Maximum possible score: " + scoreInc);
