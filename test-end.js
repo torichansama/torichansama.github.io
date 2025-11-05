@@ -198,6 +198,7 @@ function scoreFigure() {
     
     if (FIND_MAX_SCORE) {
         console.log("Maximum possible score: " + scoreInc);
+        setDebugInfo("TILING: ", SCORE_CANVAS_TILES_W);
         setDebugInfo("MAXSCORE: ", scoreInc);
         return;
     }
