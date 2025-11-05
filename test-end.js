@@ -85,7 +85,7 @@ function scoreFigure() {
             tilingOffsetX = SCORE_AREA_TILE_SIZE*x;
             tilingOffsetY = SCORE_AREA_TILE_SIZE*y;
 
-            let displayDebugInfoForCanvas = isFinalScoring && SCORE_DEBUG && x == SCORE_CANVAS_TILES_W && y == SCORE_CANVAS_TILES_W;
+            let displayDebugInfoForCanvas = isFinalScoring && SCORE_DEBUG && x == SCORE_CANVAS_TILES_W-1 && y == SCORE_CANVAS_TILES_W-1;
 
             scoreCtx.clearRect(0, 0, SCORE_AREA_TILE_SIZE, SCORE_AREA_TILE_SIZE); //Clear canvas before we start
 
