@@ -24,31 +24,24 @@ var scoreInc = 0;
 var drawToScoreScale;
 var innerPath = new Path2D();
 var outerPath = new Path2D();
-var scoringTileContexts;
+var scoreCtx;
 var score_area_total_size;
 var score_area_midpoint;
-var canvasToDisplay = "1|1";
 
 function computeScoringConstants() {
-    scoringTileContexts = Array.from({ length: SCORE_CANVAS_TILES_W }, () => new Array(SCORE_CANVAS_TILES_W));
+    //Create canvas tile
+    let canvas = document.createElement("canvas");
+    canvas.id = "scoreCanvas";
 
-    //Create canvas tiles
-    for (let x = 0; x < SCORE_CANVAS_TILES_W; x++) {
-        for (let y = 0; y < SCORE_CANVAS_TILES_W; y++) {
-            let canvas = document.createElement("canvas");
-            canvas.id = x+"|"+y;
+    canvas.width = SCORE_AREA_TILE_SIZE; 
+    canvas.height = SCORE_AREA_TILE_SIZE;
 
-            canvas.width = SCORE_AREA_TILE_SIZE; 
-            canvas.height = SCORE_AREA_TILE_SIZE;
+    canvas.style.width = `${H}px`; //Resize the drawing canvas to be SCORE_AREA_TILE_SIZE, but reduce the CSS size to fit on screen so it can be seen while debugging
+    canvas.style.height = `${H}px`;
+    canvas.style.display = "none";
 
-            canvas.style.width = `${H}px`; //Resize the drawing canvas to be SCORE_AREA_TILE_SIZE, but reduce the CSS size to fit on screen so it can be seen while debugging
-            canvas.style.height = `${H}px`;
-            canvas.style.display = "none";
-
-            document.body.appendChild(canvas);
-            scoringTileContexts[x][y] = canvas.getContext("2d", { willReadFrequently: false, aplha: false });
-        }
-    }
+    document.body.appendChild(canvas);
+    scoreCtx = canvas.getContext("2d", { willReadFrequently: false, aplha: false });
 
     score_area_total_size = SCORE_AREA_TILE_SIZE*SCORE_CANVAS_TILES_W;
     score_area_midpoint = score_area_total_size/2;
@@ -89,22 +82,22 @@ function scoreFigure() {
 
     for (let x = 0; x < SCORE_CANVAS_TILES_W; x++) { //Iterate through scoring tiles and set the context each time
         for (let y = 0; y < SCORE_CANVAS_TILES_W; y++) {
-            scoreCtx = scoringTileContexts[x][y];
             tilingOffsetX = SCORE_AREA_TILE_SIZE*x;
             tilingOffsetY = SCORE_AREA_TILE_SIZE*y;
 
-            let displayDebugInfoForCanvas = isFinalScoring && SCORE_DEBUG && x+"|"+y == canvasToDisplay;
+            let displayDebugInfoForCanvas = isFinalScoring && SCORE_DEBUG && x == SCORE_CANVAS_TILES_W && y == SCORE_CANVAS_TILES_W;
 
-            scoreCtx.clearRect(0, 0, score_area_total_size, score_area_total_size); //Clear canvas before we start
+            scoreCtx.clearRect(0, 0, SCORE_AREA_TILE_SIZE, SCORE_AREA_TILE_SIZE); //Clear canvas before we start
 
             //Render scaled strokes to scoring canvas
             scoreCtx.strokeStyle = "red";
             scoreCtx.fillStyle = "red";
             scoreCtx.lineCap = "round";
             scoreCtx.lineJoin = "round";
+            scoreCtx.globalCompositeOperation = "source-over";
             
             //If were looking to find the maximum score, fill entire screen with "stroke"
-            if (FIND_MAX_SCORE) {scoreCtx.fillRect(0, 0, score_area_total_size, score_area_total_size);}
+            if (FIND_MAX_SCORE) {scoreCtx.fillRect(0, 0, SCORE_AREA_TILE_SIZE, SCORE_AREA_TILE_SIZE);}
             else {
                 scoreCtx.translate(-tilingOffsetX, -tilingOffsetY);
                 strokes.forEach(stroke => { //Draw the strokes to canavs
@@ -129,20 +122,20 @@ function scoreFigure() {
                         circle(Math.round(stroke.x[0]*drawToScoreScale+score_area_midpoint), Math.round(stroke.y[0]*drawToScoreScale+score_area_midpoint), stroke.brushSize*drawToScoreScale, true, scoreCtx);
                         return;
                     }
-
             
                     scoreCtx.beginPath();
                     scoreCtx.moveTo(Math.round(stroke.x[0]*drawToScoreScale+score_area_midpoint), Math.round(stroke.y[0]*drawToScoreScale+score_area_midpoint))
                     for (let i = 1; i < stroke.x.length; i++) {
                         scoreCtx.lineTo(Math.round(stroke.x[i]*drawToScoreScale+score_area_midpoint), Math.round(stroke.y[i]*drawToScoreScale+score_area_midpoint));
-                        scoreCtx.stroke();
                     }
+                    scoreCtx.stroke();
                 });
                 scoreCtx.translate(tilingOffsetX, tilingOffsetY);
             }
 
             //Create an empty image data that will be used to show a debug rendering
-            let debugImgData = scoreCtx.createImageData(SCORE_AREA_TILE_SIZE, SCORE_AREA_TILE_SIZE);
+            let debugImgData;
+            if (displayDebugInfoForCanvas) {debugImgData = scoreCtx.createImageData(SCORE_AREA_TILE_SIZE, SCORE_AREA_TILE_SIZE);}
 
             //Grab the image data of the strokes before masking takes place
             let preMaskImgData = scoreCtx.getImageData(0, 0, SCORE_AREA_TILE_SIZE, SCORE_AREA_TILE_SIZE);
@@ -181,7 +174,7 @@ function scoreFigure() {
 
             //Show color coded debug rendering if its enabled
             if (displayDebugInfoForCanvas) {
-                document.getElementById(canvasToDisplay).style.display = ""; //Show selected canvas for the score debug
+                document.getElementById("scoreCanvas").style.display = ""; //Show selected canvas for the score debug
                 scoreCtx.putImageData(debugImgData, 0, 0);
                 scoreCtx.globalCompositeOperation = "destination-over";
                 scoreCtx.strokeStyle = "black";
@@ -191,6 +184,10 @@ function scoreFigure() {
                 scoreCtx.stroke(outerPath);
                 scoreCtx.translate(tilingOffsetX, tilingOffsetY);
             }
+
+            imgData = null;
+            preMaskImgData = null;
+            debugImgData = null;
         }
     }
 
@@ -201,6 +198,7 @@ function scoreFigure() {
     
     if (FIND_MAX_SCORE) {
         console.log("Maximum possible score: " + scoreInc);
+        setDebugInfo("MAXSCORE: ", scoreInc);
         return;
     }
 
