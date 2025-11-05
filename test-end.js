@@ -121,8 +121,8 @@ function scoreFigure() {
                     //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
                     // if (stroke.x.length == 1 || Math.hypot(stroke.x[0]-stroke.x[stroke.x.length-1], stroke.y[0]-stroke.y[stroke.x.length-1]) < 4) { 
                     if (stroke.x.length == 1 || 
-                        Math.round(stroke.x[0]*drawToScoreScale+score_area_midpoint) == Math.round(stroke.x[stroke.x.length-1]*drawToScoreScale+score_area_midpoint) &&  
-                        Math.round(stroke.y[0]*drawToScoreScale+score_area_midpoint) == Math.round(stroke.y[stroke.y.length-1]*drawToScoreScale+score_area_midpoint)) { 
+                        (Math.round(stroke.x[0]*drawToScoreScale+score_area_midpoint) == Math.round(stroke.x[stroke.x.length-1]*drawToScoreScale+score_area_midpoint) &&  
+                        Math.round(stroke.y[0]*drawToScoreScale+score_area_midpoint) == Math.round(stroke.y[stroke.y.length-1]*drawToScoreScale+score_area_midpoint))) { 
                         // console.log(stroke.brushSize*drawToScoreScale);
                         DEBUG_lastRounded = "true";
                         DEBUG_minRad = Math.min(DEBUG_minRad, stroke.brushSize*drawToScoreScale);
