@@ -235,15 +235,14 @@ function checkValidEntries() {
         element = document.getElementById(key);
 
         if (element.type != "number") continue; //Only number fields allow for bad inputs
-        let errorFlag = false;
-        errorFlag = !isNumeric(element.value) || element.value == ""; //Non-numeric or empty imput
+
+        errorFlag = errorFlag || !isNumeric(element.value) || element.value == ""; //Non-numeric or empty imput
         errorFlag = errorFlag || (element.id.includes("Percentage") && parseInt(element.value) > 100); //>100 on a percentage
         errorFlag = errorFlag || (element.id.includes("brushSize") && (parseInt(element.value) < 5 || parseInt(element.value) > 35));
         //Check if a number field contains a valid number (percentage inputs must be <= 100)
         if (errorFlag) {
             document.getElementById(element.id + "Error").style.display = "inline-block";
             element.value = "";
-            errorFlag = true;
         } else {
             document.getElementById(element.id + "Error").style.display = "none";
         }
