@@ -13,5 +13,5 @@ const defaultSettings = {
 
 const COMP_TESTING = false; //Use for correct screen sizing on non-iOS devices
 const DEBUG_VIEW = true; //Display debug stack on side of screen
-const SCORE_DEBUG = false; //Set this to view the scoring process for debugging purposes
-const FIND_MAX_SCORE = false; //Set this to true to find the maximum score for the selected figure
+const SCORE_DEBUG = true; //Set this to view the scoring process for debugging purposes
+const FIND_MAX_SCORE = true; //Set this to true to find the maximum score for the selected figure
