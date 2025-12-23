@@ -52,6 +52,7 @@ function drawCtxRedraw() {
             drawCtx.globalCompositeOperation = "destination-out";
         }
         drawCtx.strokeStyle = stroke.strokeColor;
+        drawCtx.fillStyle = stroke.strokeColor;
         drawCtx.lineWidth = stroke.brushSize*zoom*2;
 
         if (stroke.x.length == 1) { //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
@@ -66,6 +67,7 @@ function drawCtxRedraw() {
         }
         drawCtx.stroke();
     });
+    drawCtx.globalCompositeOperation = "source-over";
 }
 
 //Drawing the content of the figure canvas---------------------------------------------------------
