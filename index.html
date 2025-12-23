@@ -3,6 +3,8 @@
 
 <!-- Font Awesome by Dave Gandy - http://fontawesome.io  -->
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="modal_style.css">
+
 <style>
 body {
     width: 100%;
@@ -16,7 +18,7 @@ body {
     -webkit-touch-callout: none;
     font-family: 'Times New Roman', Times, serif;
 }
-p {
+.text {
     position: absolute;
     margin-top: 0px;
     margin-bottom: 0px;
@@ -91,14 +93,13 @@ button {
 
 
 <body>
-<p id="vers"></p>
-<p id="copyright"></p>
-<p id="devMode" style="display: none;">DEV MODE</p>
+<p class="text" id="vers"></p>
+<p class="text" id="copyright"></p>
+<p class="text" id="devMode" style="display: none;">DEV MODE</p>
 
 <div id="main">
     <h1 id="title">Test 1</h1>
     <button class="navButton" onclick="location.href = 'test.html'">Practice</button>
-    <!-- <button class="navButton" id="startTest" onclick="location.href = 'testBegin_auth.html'">Initiate Test</button> -->
     <button class="navButton" id="startTest" onclick="location.href = 'test.html'; sessionStorage.isTest = JSON.stringify('true')">Initiate Test</button>
 </div>
 
@@ -107,6 +108,8 @@ button {
 
 
 <script src="gen-config.js"></script>
+<script src="test-prompt.js"></script>
+
 <script>
 const VERSION = "10.3.5";
 const YEAR = new Date().getFullYear();
@@ -126,4 +129,11 @@ for (const [key, value] of Object.entries(defaultSettings)) {
 };
 sessionStorage.isTest = JSON.stringify("false");
 
+try {
+    JSON.parse(sessionStorage.ranInitialization);
+} catch (error) {
+    activatePrompt(initializing);
+    setTimeout(cancelPrompt, 5000);
+    sessionStorage.ranInitialization = JSON.stringify("true")
+}
 </script>

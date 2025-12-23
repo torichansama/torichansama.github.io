@@ -25,6 +25,19 @@ function cancelPrompt() {
     activePrompt = null;
 }
 
+var activePrompt = null;
+
+//Define generic prompts (modals)----------------------------------------------------------------------
+// Prompts must be called with activatePrompt(prompt_to_activate)
+// To clear the active prompt, call clearPrompt()
+var loading = new Prompt("Scoring...", "rgba(240,240,240,1)", [
+    new PromptElement("throbber", "fa fa-arrow-right", "green", null),
+]);
+var initializing = new Prompt("Initializing...", "rgba(240,240,240,1)", [
+    new PromptElement("throbber", "fa fa-arrow-right", "green", null),
+]);
+
+
 //Given the JS descriptions of each prompt, create an HTML element for each and reference that into the JS prompt object
 function initializePrompt(prompt) {
     let modal = document.createElement("div"); //Initialize all modal elements

@@ -4,6 +4,7 @@
 <!-- Font Awesome by Dave Gandy - http://fontawesome.io -->    
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
 <link rel="stylesheet" href="test_style.css">
+<link rel="stylesheet" href="modal_style.css">
 
 <body>
 <!-- Canvas stack for background grid, drawing, and rendering the figure -->
@@ -168,7 +169,7 @@ function extendCurrentStroke (rawX, rawY, zoom) {
 }
 
 
-//Define all prompts (modals)----------------------------------------------------------------------
+//Define prompts (modals) specific to test----------------------------------------------------------------------
 // Prompts must be called with activatePrompt(prompt_to_activate)
 // To clear the active prompt, call clearPrompt()
 var beginTest = new Prompt("Press play to begin test.<br></br>Timer countdown will begin immediately.", "rgba(240,240,240,1)", [
@@ -184,9 +185,6 @@ var endPracticeEarly = new Prompt("End Practice Session?", "rgba(0,0,0,0.3)", [
 ]);
 var timerExpired = new Prompt("Timer Expired.", "rgba(0,0,0,0.3)", [
     new PromptElement("button", "fa fa-arrow-right", "green", endTest),
-]);
-var loading = new Prompt("Scoring...", "rgba(240,240,240,1)", [
-    new PromptElement("throbber", "fa fa-arrow-right", "green", endTest),
 ]);
 var handedness = new Prompt("Select your dominant hand:", "rgba(240,240,240,1)", [
     new PromptElement("button", "L", "black", ()=>{setHandedness("left")}),
