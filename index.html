@@ -107,11 +107,13 @@ button {
 </body>
 
 
+<script src="gen-figures.js"></script>
 <script src="gen-config.js"></script>
-<script src="test-prompt.js"></script>
+<script src="gen-prompt.js"></script>
+<script src="test-end.js"></script>
 
 <script>
-const VERSION = "10.3.5";
+const VERSION = "10.3.6";
 const YEAR = new Date().getFullYear();
 
 //Set HTML elements
@@ -133,7 +135,10 @@ try {
     JSON.parse(sessionStorage.ranInitialization);
 } catch (error) {
     activatePrompt(initializing);
-    setTimeout(cancelPrompt, 5000);
-    sessionStorage.ranInitialization = JSON.stringify("true")
+    findMaxScore = true;
+    computeScoringConstants(true);
+    setTimeout(scoreFigure, 500);
+    sessionStorage.ranInitialization = JSON.stringify("true");
+    // cancelPrompt();
 }
 </script>

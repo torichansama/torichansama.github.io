@@ -35,13 +35,11 @@
 <script src="gen-config.js"></script>
 <script src="gen-figures.js"></script>
 <script src="test-end.js"></script>
-<script src="test-prompt.js"></script>
+<script src="gen-prompt.js"></script>
 <script src="test-redraw.js"></script>
 <script src="test-touchListener.js"></script>
 <script>
 //Constant Declarations----------------------------------------------------------------------------
-const PI = Math.PI;
-const TAU = 2*Math.PI;
 
 var scale = window.devicePixelRatio;
 const W = COMP_TESTING ? window.innerWidth-90 : screen.height-90;
@@ -52,10 +50,6 @@ const RENDER_GRID = JSON.parse(localStorage.displayGrid) == "true";
 
 const ZOOM_SENS = 0.002;
 const MAX_ZOOM = 21; //34
-
-const SELECTED_FIGURE = figures[parseInt(JSON.parse(localStorage.selectedFigure))];
-const THETA_RESOLUTION_HIGH_LOD = 700;
-const THETA_RESOLUTION_LOW_LOD = 305;
 
 const IS_TEST = JSON.parse(sessionStorage.isTest) == "true";
 const ENABLE_TIMER = IS_TEST || JSON.parse(localStorage.practiceTimer) == "true";
@@ -74,17 +68,9 @@ const ERASE_COLOR = "#FFFFFF";
 const DRAW_COLOR = IS_TEST ? "#808080" : "#808080"; //Test Color : Practice Color
 
 //DO NOT CHANGE - STANDARDIZES TEST RESULTS
-const AVG_Y = (SELECTED_FIGURE.minY+SELECTED_FIGURE.maxY)/2;
 const X_SCALE = (W/2-100)/(SELECTED_FIGURE.width/2);
 const Y_SCALE = (H/2-60)/(SELECTED_FIGURE.maxY-AVG_Y);
-// const SCALE = 10;
 const SCALE = Math.min(X_SCALE, Y_SCALE);
-
-const SCORE_AREA_TILE_SIZE = 4096; //CANNOT EXCEED 4096px by 4096px DUE TO iOS/SAFARI LIMITATIONS
-const SCORE_CANVAS_TILES_W = 5; //□□□□
-                                //□□□□
-                                //□□□□
-                                //□□□□
 
 const BRUSH_SIZE = parseInt(JSON.parse(localStorage.brushSize))/600*SCALE;
 
@@ -191,10 +177,12 @@ var handedness = new Prompt("Select your dominant hand:", "rgba(240,240,240,1)",
     new PromptElement("button", "R", "black", ()=>{setHandedness("right")})
 ]);
 
+
 //Program Initialization---------------------------------------------------------------------------
 sessionStorage.isTest = JSON.stringify("false"); //Clear any previously set isTest flag 
 
-computeScoringConstants();
+findMaxScore = FIND_MAX_SCORE;
+computeScoringConstants(false);
 mainRedraw(); //Draw main content
 
 activatePrompt(handedness); //Call handedness prompt

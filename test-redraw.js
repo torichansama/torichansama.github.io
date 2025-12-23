@@ -127,17 +127,3 @@ function figureCtxRedraw () {
     figureCtx.stroke(innerPath);
     figureCtx.stroke(outerPath);
 }
-
-function getCoordsFromFigure(theta, scale, screenOffsetX, screenOffsetY) {
-    let equationPair = SELECTED_FIGURE.calcRad(theta);
-    
-    let yOffset = -AVG_Y*scale;
-
-    let innerRad = equationPair.inner*scale;
-    let outerRad = equationPair.outer*scale;
-
-    return new coordPair (
-        screenOffsetX+innerRad*cos(theta), screenOffsetY-(innerRad*sin(theta)+yOffset),
-        screenOffsetX+outerRad*cos(theta), screenOffsetY-(outerRad*sin(theta)+yOffset)
-    )
-}

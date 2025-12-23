@@ -1,6 +1,6 @@
 function promptSessionEnd() {
     if (IS_TEST) {
-        activatePrompt(endTestEarly);
+        activatePrompt(Early);
     } else {
         activatePrompt(endPracticeEarly);
     }
@@ -9,7 +9,7 @@ function promptSessionEnd() {
 function endTest() {
     zoomOut(false)
 
-    if (!SCORE_DEBUG && !FIND_MAX_SCORE) activatePrompt(loading);
+    if (!SCORE_DEBUG && !findMaxScore) activatePrompt(loading);
 
     if (ENABLE_SCORING) {
         isFinalScoring = true;
@@ -19,6 +19,12 @@ function endTest() {
     }
 }
 
+const SCORE_AREA_TILE_SIZE = 4096; //CANNOT EXCEED 4096px by 4096px DUE TO iOS/SAFARI LIMITATIONS
+const SCORE_CANVAS_TILES_W = 5; //□□□□
+                                //□□□□
+                                //□□□□
+                                //□□□□
+
 var isFinalScoring = false;
 var scoreInc = 0;
 var drawToScoreScale;
@@ -27,8 +33,9 @@ var outerPath = new Path2D();
 var scoreCtx;
 var score_area_total_size;
 var score_area_midpoint;
+var findMaxScore;
 
-function computeScoringConstants() {
+function computeScoringConstants(maxScoreOnly) {
     //Create canvas tile
     let canvas = document.createElement("canvas");
     canvas.id = "scoreCanvas";
@@ -36,8 +43,8 @@ function computeScoringConstants() {
     canvas.width = SCORE_AREA_TILE_SIZE; 
     canvas.height = SCORE_AREA_TILE_SIZE;
 
-    canvas.style.width = `${H}px`; //Resize the drawing canvas to be SCORE_AREA_TILE_SIZE, but reduce the CSS size to fit on screen so it can be seen while debugging
-    canvas.style.height = `${H}px`;
+    // canvas.style.width = `${H}px`; //Resize the drawing canvas to be SCORE_AREA_TILE_SIZE, but reduce the CSS size to fit on screen so it can be seen while debugging
+    // canvas.style.height = `${H}px`;
     canvas.style.display = "none";
 
     document.body.appendChild(canvas);
@@ -50,7 +57,9 @@ function computeScoringConstants() {
     let xScale = (score_area_midpoint-500*SCORE_CANVAS_TILES_W)/(SELECTED_FIGURE.width/2);
     let yScale = (score_area_midpoint-500*SCORE_CANVAS_TILES_W)/(SELECTED_FIGURE.maxY-AVG_Y);
     let figureScale = Math.floor(Math.min(xScale, yScale)); //Scale of figure in scoring mode
-    drawToScoreScale = Math.floor(figureScale/SCALE); //Realtive size of scoring figure compared to drawing figure
+    if (!maxScoreOnly) {
+        drawToScoreScale = Math.floor(figureScale/SCALE); //Realtive size of scoring figure compared to drawing figure
+    }
 
     //Create the inner and outer paths of the figure at scoring scale
     let minAngle = SELECTED_FIGURE.minTheta;
@@ -97,7 +106,7 @@ function scoreFigure() {
             scoreCtx.globalCompositeOperation = "source-over";
             
             //If were looking to find the maximum score, fill entire screen with "stroke"
-            if (FIND_MAX_SCORE) {scoreCtx.fillRect(0, 0, SCORE_AREA_TILE_SIZE, SCORE_AREA_TILE_SIZE);}
+            if (findMaxScore) {scoreCtx.fillRect(0, 0, SCORE_AREA_TILE_SIZE, SCORE_AREA_TILE_SIZE);}
             else {
                 scoreCtx.translate(-tilingOffsetX, -tilingOffsetY);
                 strokes.forEach(stroke => { //Draw the strokes to canavs
@@ -164,7 +173,7 @@ function scoreFigure() {
             //The pre-mask image data is now reverse masked by the figure, meaning all remaing pixels are blank or outside of the figure
             for (let i = 0; i < preMaskImgData.data.length; i += 4) {
                 if (preMaskImgData.data[i] != 0) {
-                    if (!FIND_MAX_SCORE) scoreInc--;
+                    if (!findMaxScore) scoreInc--;
                     if (displayDebugInfoForCanvas) {
                         debugImgData.data[i] = 255;
                         debugImgData.data[i+3] = 255;
@@ -191,15 +200,18 @@ function scoreFigure() {
         }
     }
 
-    setDebugInfo("LastRounded", DEBUG_lastRounded);
-    setDebugInfo("MinScoreRad", Math.round(DEBUG_minRad*100)/100);
+    // setDebugInfo("LastRounded", DEBUG_lastRounded);
+    // setDebugInfo("MinScoreRad", Math.round(DEBUG_minRad*100)/100);
     // setDebugInfo("LastScoreX", DEBUG_lastX);
     // setDebugInfo("LastScoreY", DEBUG_lastY);
     
-    if (FIND_MAX_SCORE) {
+    if (findMaxScore) {
         console.log("Maximum possible score: " + scoreInc);
-        setDebugInfo("TILING: ", SCORE_CANVAS_TILES_W);
-        setDebugInfo("MAXSCORE: ", scoreInc);
+        sessionStorage.maxScore = JSON.stringify(scoreInc);
+        console.log("Saved to session storage");
+        // setDebugInfo("TILING: ", SCORE_CANVAS_TILES_W);
+        // setDebugInfo("MAXSCORE: ", scoreInc);
+        cancelPrompt();
         return;
     }
 
@@ -207,14 +219,15 @@ function scoreFigure() {
 
     if (LIVE_SCORING) liveScoreDisplay.innerHTML = "INC: " + scoreInc + " | Percent Score: " + Math.round(scoreInc/SELECTED_FIGURE.maxScore*100*1000000)/1000000;
 
-    if (isFinalScoring && !FIND_MAX_SCORE && !SCORE_DEBUG) {
+    if (isFinalScoring && !findMaxScore && !SCORE_DEBUG) {
         saveScore();
     }
 }
 
 function saveScore() {
     //Publish score to sessionStorage
-    let score = Math.round(scoreInc/SELECTED_FIGURE.maxScore*100*10000)/10000 //Round to 4 decimal places
+    let maxScore = JSON.parse(sessionStorage.maxScore);
+    let score = Math.round(scoreInc/maxScore*100*10000)/10000 //Round to 4 decimal places
     if (score < 0) {
         score = "NEGATIVE VALUE";
     } else {

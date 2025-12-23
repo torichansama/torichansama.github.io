@@ -21,9 +21,10 @@ function coordPair(innerX, innerY, outerX, outerY) {
     this.outerX = outerX; this.outerY = outerY;
 }
 
+
 //NOTE: This is the only place new figures need be added, figures take form: inner equation, outer equation
-// 26573911 (26573101 with rounding)
-// 26574998 (26573895 with rounding)- 5x5 tiling on ipad
+// 26573911
+// 26574998 - 5x5 tiling on ipad
 new Figure("The Shubi", 26574998, 0, 1.4, 2.4, 0, Math.PI, (t) => {
     if (t == PI/2) t -= 0.000000001; //Handle discontinuity at PI/2
 
@@ -39,6 +40,30 @@ new Figure("The Shubi", 26574998, 0, 1.4, 2.4, 0, Math.PI, (t) => {
         n*p*(2-2/6*sin(t+PI)+3/60*sqr(sin(10*t+PI))-a-b-c)/sqrt(PI),
     );
 });
+
+
+const SELECTED_FIGURE = figures[0];
+const AVG_Y = (SELECTED_FIGURE.minY+SELECTED_FIGURE.maxY)/2;
+
+const THETA_RESOLUTION_HIGH_LOD = 700;
+const THETA_RESOLUTION_LOW_LOD = 305;
+
+const PI = Math.PI;
+const TAU = 2*Math.PI;
+
+function getCoordsFromFigure(theta, scale, screenOffsetX, screenOffsetY) {
+    let equationPair = SELECTED_FIGURE.calcRad(theta);
+    
+    let yOffset = -AVG_Y*scale;
+
+    let innerRad = equationPair.inner*scale;
+    let outerRad = equationPair.outer*scale;
+
+    return new coordPair (
+        screenOffsetX+innerRad*cos(theta), screenOffsetY-(innerRad*sin(theta)+yOffset),
+        screenOffsetX+outerRad*cos(theta), screenOffsetY-(outerRad*sin(theta)+yOffset)
+    )
+}
 
 //Shorthand for easier writing of new figures
 let sin = Math.sin;
