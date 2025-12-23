@@ -22,7 +22,7 @@ function coordPair(innerX, innerY, outerX, outerY) {
 }
 
 //NOTE: This is the only place new figures need be added, figures take form: inner equation, outer equation
-// 26573911
+// 26573911 (26573101 with rounding)
 // 26574998 - 5x5 tiling on ipad
 new Figure("The Shubi", 26574998, 0, 1.4, 2.4, 0, Math.PI, (t) => {
     if (t == PI/2) t -= 0.000000001; //Handle discontinuity at PI/2

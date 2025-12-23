@@ -137,7 +137,7 @@ function getCoordsFromFigure(theta, scale, screenOffsetX, screenOffsetY) {
     let outerRad = equationPair.outer*scale;
 
     return new coordPair (
-        screenOffsetX+innerRad*cos(theta), screenOffsetY-(innerRad*sin(theta)+yOffset),
-        screenOffsetX+outerRad*cos(theta), screenOffsetY-(outerRad*sin(theta)+yOffset)
+        Math.floor(screenOffsetX+innerRad*cos(theta)), Math.floor(screenOffsetY-(innerRad*sin(theta)+yOffset)),
+        Math.floor(screenOffsetX+outerRad*cos(theta)), Math.floor(screenOffsetY-(outerRad*sin(theta)+yOffset))
     )
 }
