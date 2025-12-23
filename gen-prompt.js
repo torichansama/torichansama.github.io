@@ -21,6 +21,10 @@ function activatePrompt(prompt) {
 }
 
 function cancelPrompt() {
+    if (!activePrompt) {
+        console.log("Cancel prompt called with no active prompt"); 
+        return;
+    }
     activePrompt.htmlElement.style.display = "none";
     activePrompt = null;
 }

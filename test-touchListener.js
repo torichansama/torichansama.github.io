@@ -61,9 +61,9 @@ figureCanvas.addEventListener("touchstart", e => {
         zoomY = centerY;
     }
 
-    setDebugInfo("OffsetX", Math.round(offsetX*100)/100);
-    setDebugInfo("OffsetY", Math.round(offsetY*100)/100);
-    setDebugInfo("TouchState", "Start");
+    // setDebugInfo("OffsetX", Math.round(offsetX*100)/100);
+    // setDebugInfo("OffsetY", Math.round(offsetY*100)/100);
+    // setDebugInfo("TouchState", "Start");
 })
 
 //TouchMove Listener-------------------------------------------------------------------------------
@@ -123,17 +123,17 @@ figureCanvas.addEventListener("touchmove", e => {
         mainRedraw();
     }
 
-    setDebugInfo("TouchState", "Move");
+    // setDebugInfo("TouchState", "Move");
 })
 
 //TouchEnd Listener--------------------------------------------------------------------------------
 figureCanvas.addEventListener("touchend", e => { //Clear the Eraser Outline
     gridCtxRedraw();
 
-    setDebugInfo("TouchState", "End");
+    // setDebugInfo("TouchState", "End");
 
     if (!strokes.includes(currentStroke) && currentStroke != undefined) {
-        setDebugInfo("TouchState", "End-undef");
+        // setDebugInfo("TouchState", "End-undef");
 
         strokes.push(currentStroke); //Store currentStroke if its still in limbo
         circle(lastStrokeX, lastStrokeY, BRUSH_SIZE, true, drawCtx);
@@ -143,9 +143,9 @@ figureCanvas.addEventListener("touchend", e => { //Clear the Eraser Outline
         if (LIVE_SCORING) scoreFigure();
     }
     
-    setDebugInfo("Raw Tx", Math.round(strokes[strokes.length-1].x[0]*100)/100);
-    setDebugInfo("Raw Ty", Math.round(strokes[strokes.length-1].y[0]*100)/100);
-    setDebugInfo("BrushSize", Math.round(strokes[strokes.length-1].brushSize*100)/100);
+    // setDebugInfo("Raw Tx", Math.round(strokes[strokes.length-1].x[0]*100)/100);
+    // setDebugInfo("Raw Ty", Math.round(strokes[strokes.length-1].y[0]*100)/100);
+    // setDebugInfo("BrushSize", Math.round(strokes[strokes.length-1].brushSize*100)/100);
 });
 
 //Wheel Listener-----------------------------------------------------------------------------------

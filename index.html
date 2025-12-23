@@ -113,7 +113,7 @@ button {
 <script src="test-end.js"></script>
 
 <script>
-const VERSION = "10.3.6";
+const VERSION = "10.4.6";
 const YEAR = new Date().getFullYear();
 
 //Set HTML elements
@@ -131,14 +131,10 @@ for (const [key, value] of Object.entries(defaultSettings)) {
 };
 sessionStorage.isTest = JSON.stringify("false");
 
-try {
-    JSON.parse(sessionStorage.ranInitialization);
-} catch (error) {
+if (localStorage["maxScoreValue"] == undefined) {
     activatePrompt(initializing);
     findMaxScore = true;
     computeScoringConstants(true);
     setTimeout(scoreFigure, 500);
-    sessionStorage.ranInitialization = JSON.stringify("true");
-    // cancelPrompt();
 }
 </script>

@@ -1,6 +1,6 @@
 function promptSessionEnd() {
     if (IS_TEST) {
-        activatePrompt(Early);
+        activatePrompt(endTestEarly);
     } else {
         activatePrompt(endPracticeEarly);
     }
@@ -207,8 +207,8 @@ function scoreFigure() {
     
     if (findMaxScore) {
         console.log("Maximum possible score: " + scoreInc);
-        sessionStorage.maxScore = JSON.stringify(scoreInc);
-        console.log("Saved to session storage");
+        localStorage["maxScoreValue"] = JSON.stringify(scoreInc);
+        console.log("Saved to local storage");
         // setDebugInfo("TILING: ", SCORE_CANVAS_TILES_W);
         // setDebugInfo("MAXSCORE: ", scoreInc);
         cancelPrompt();
@@ -226,7 +226,7 @@ function scoreFigure() {
 
 function saveScore() {
     //Publish score to sessionStorage
-    let maxScore = JSON.parse(sessionStorage.maxScore);
+    let maxScore = JSON.parse(localStorage["maxScoreValue"]);
     let score = Math.round(scoreInc/maxScore*100*10000)/10000 //Round to 4 decimal places
     if (score < 0) {
         score = "NEGATIVE VALUE";
