@@ -44,13 +44,13 @@ function computeScoringConstants() {
     scoreCtx = canvas.getContext("2d", { willReadFrequently: false, aplha: false });
 
     score_area_total_size = SCORE_AREA_TILE_SIZE*SCORE_CANVAS_TILES_W;
-    score_area_midpoint = score_area_total_size/2;
+    score_area_midpoint = Math.floor(score_area_total_size/2);
 
     //Calculate the nessecary scaling factors
     let xScale = (score_area_midpoint-500*SCORE_CANVAS_TILES_W)/(SELECTED_FIGURE.width/2);
     let yScale = (score_area_midpoint-500*SCORE_CANVAS_TILES_W)/(SELECTED_FIGURE.maxY-AVG_Y);
-    let figureScale = Math.min(xScale, yScale); //Scale of figure in scoring mode
-    drawToScoreScale = figureScale/SCALE; //Realtive size of scoring figure compared to drawing figure
+    let figureScale = Math.floor(Math.min(xScale, yScale)); //Scale of figure in scoring mode
+    drawToScoreScale = Math.floor(figureScale/SCALE); //Realtive size of scoring figure compared to drawing figure
 
     //Create the inner and outer paths of the figure at scoring scale
     let minAngle = SELECTED_FIGURE.minTheta;
