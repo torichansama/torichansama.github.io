@@ -7,7 +7,7 @@ function promptSessionEnd() {
 }
 
 function endTest() {
-    zoomOut(false)
+    zoomOut()
 
     if (!SCORE_DEBUG && !findMaxScore) activatePrompt(loading);
 

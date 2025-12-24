@@ -20,7 +20,7 @@
 
 <div id="sideDiv">
     <!-- Buttons -->
-    <button class="ripple" id="resetZoom" onclick="zoomOut(true)"><i class="fa fa-compress"></i></button>
+    <button class="ripple" id="resetZoom" onclick="zoomOut()"><i class="fa fa-compress"></i></button>
 
     <!-- Brush/Eraser Toggle -->
     <div id="toggleDiv">
@@ -353,26 +353,14 @@ function decrementTimer() {
 
 //Zoom Handling------------------------------------------------------------------------------------
 //Reset to a centered view at a zoom of 1
-function zoomOut(animate) {
+function zoomOut() {
+    zoom = 1;
     offsetX = W/2;
-    offsetY = H/2+50;
+    offsetY = H/2 + 50;
     zoomX = offsetX;
     zoomY = offsetY;
-    zoom = 1;
-    oldGridSize = GRID_SIZE;
+    oldGridSize = GRID_SIZE*zoom;
     mainRedraw();
-
-    if (animate) zoomOutAnimation(0);
-}
-
-//Bump zoom out then back in
-function zoomOutAnimation(inc) {
-    zoom -= 0.005*Math.sign(10-inc);
-    zoomX = offsetX;
-    zoomY = H/2-offsetY;
-    mainRedraw();
-
-    if (inc < 20) requestAnimationFrame(() => {zoomOutAnimation(inc+1)});
 }
 </script>
 </html>

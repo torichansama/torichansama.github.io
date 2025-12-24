@@ -67,40 +67,15 @@ function drawCtxRedraw() {
         }
         drawCtx.stroke();
     });
-    drawCtx.globalCompositeOperation = "source-over";
 }
 
 //Drawing the content of the figure canvas---------------------------------------------------------
 function figureCtxRedraw () {
     figureCtx.clearRect(0, 0, W, H);
-    let resolution = THETA_RESOLUTION_LOW_LOD;
+    let resolution = THETA_RESOLUTION_HIGH_LOD;
 
-    //Get the theta range of the part of the outline visible on screen
-    let minAngle = TAU; //Set these to the opposite values to enable finding min and max later
-    let maxAngle = 0;
-    if (offsetX > 0 && (offsetX-W)*zoom < 0 && offsetY > 0 && (offsetY-H)*zoom < 0) { //If center of figure is visible set visible angle to 0->TAU
-        minAngle = SELECTED_FIGURE.minTheta;
-        maxAngle = SELECTED_FIGURE.maxTheta;
-        resolution = THETA_RESOLUTION_HIGH_LOD
-    } else {
-        let figureYOffset = AVG_Y*SCALE*zoom;
-        let cornerAngles = [ //Otherwise find the theta values that point to each corner of the screen
-            Math.atan2(offsetY+figureYOffset, -offsetX+W),
-            Math.atan2(offsetY+figureYOffset, -offsetX),
-            -Math.atan2(-offsetY+H-figureYOffset, -offsetX),
-            -Math.atan2(-offsetY+H-figureYOffset, -offsetX+W)
-        ];
-        for (let i = 0; i < 4; i++) { //Find the corners with the min and max theta values
-            if (cornerAngles[i] < 0) cornerAngles[i] = TAU+cornerAngles[i]; 
-
-            minAngle = Math.min(minAngle, cornerAngles[i]);
-            maxAngle = Math.max(maxAngle, cornerAngles[i]);
-        }
-        if (offsetX < 0 && minAngle < PI/4 && maxAngle > 3*PI/2) { //Handle the 360->0 discontinuity
-            maxAngle = cornerAngles[1];
-            minAngle = cornerAngles[2]-TAU; 
-        }
-    }
+    let minAngle = SELECTED_FIGURE.minTheta;
+    let maxAngle = SELECTED_FIGURE.maxTheta;
     
     //Drawing the visible part of the figure outline
     if (SELECTED_FIGURE.maxTheta-TAU != SELECTED_FIGURE.minTheta) {
