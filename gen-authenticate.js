@@ -1,6 +1,7 @@
 function authenticate (value) {
     // return false;
     // return true;
+    // IS THIS WORKING?????
 
     let proctorPassword;
     try {
