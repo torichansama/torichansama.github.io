@@ -216,8 +216,8 @@ function scoreFigure() {
     }
 
     console.log("Score: " + scoreInc);
-
-    if (LIVE_SCORING) liveScoreDisplay.innerHTML = "INC: " + scoreInc + " | Percent Score: " + Math.round(scoreInc/SELECTED_FIGURE.maxScore*100*1000000)/1000000;
+    let maxScore = JSON.parse(localStorage["maxScoreValue"]);
+    if (LIVE_SCORING) liveScoreDisplay.innerHTML = "INC: " + scoreInc + " | Percent Score: " + Math.round(scoreInc/maxScore*100*1000000)/1000000;
 
     if (isFinalScoring && !findMaxScore && !SCORE_DEBUG) {
         saveScore();

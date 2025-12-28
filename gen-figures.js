@@ -1,8 +1,7 @@
 //Define Figure object 
 var figures = [];
-function Figure (displayName, maxScore, minY, maxY, width, minTheta, maxTheta, calcRad) {
+function Figure (displayName, minY, maxY, width, minTheta, maxTheta, calcRad) {
     this.displayName = displayName;
-    this.maxScore = maxScore;
     this.minY = minY;
     this.maxY = maxY;
     this.width = width;
@@ -23,9 +22,9 @@ function coordPair(innerX, innerY, outerX, outerY) {
 
 
 //NOTE: This is the only place new figures need be added, figures take form: inner equation, outer equation
-// 26573911
+// 26573911 - 5x5 tiling on computer
 // 26574998 - 5x5 tiling on ipad
-new Figure("The Shubi", 26574998, 0, 1.4, 2.4, 0, Math.PI, (t) => {
+new Figure("The Shubi", 0, 1.4, 2.4, 0, Math.PI, (t) => {
     if (t == PI/2) t -= 0.000000001; //Handle discontinuity at PI/2
 
     let a = 3/900*sqr(cos(7*(t+PI/2)))*sin(22*(t+PI/2))*tan((t+PI/2)/2);
