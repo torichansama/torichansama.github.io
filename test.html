@@ -176,7 +176,9 @@ var handedness = new Prompt("Select your dominant hand:", "rgba(240,240,240,1)",
     new PromptElement("button", "L", "black", ()=>{setHandedness("left")}),
     new PromptElement("button", "R", "black", ()=>{setHandedness("right")})
 ]);
-
+var loading = new Prompt("Scoring...", "rgba(240,240,240,1)", [
+    new PromptElement("throbber", "fa fa-arrow-right", "green", null),
+]);
 
 //Program Initialization---------------------------------------------------------------------------
 sessionStorage.isTest = JSON.stringify("false"); //Clear any previously set isTest flag 

@@ -115,6 +115,10 @@ button {
 <script>
 const YEAR = new Date().getFullYear();
 
+var initializing = new Prompt("Initializing...", "rgba(240,240,240,1)", [
+    new PromptElement("throbber", "fa fa-arrow-right", "green", null),
+]);
+
 //Set HTML elements
 document.getElementById("vers").textContent = VERSION;
 document.getElementById("copyright").textContent = "© " + YEAR + " McPhail Patents and Research LLC";
