@@ -79,6 +79,14 @@ p {
 #status {
     margin-top: 35px;
 }
+#version {
+    padding: 6px 8px 6px 16px;
+    font-size: 25px;
+    color: white;
+    position: absolute;
+    bottom: 0px;
+    z-index: 2;
+}
 </style>
 
 
@@ -89,6 +97,7 @@ p {
     <a id="practiceNav" onclick="changePage('practice');">Practice</a>
     <a id="pwChangeNav" onclick="changePage('pwChange');">Password</a>
 </div>
+<p id="version">Ver: ERR</p>
 
 <!-- The main settings page the user lands on -->
 <div class="page" id="main">
@@ -107,7 +116,7 @@ p {
     </div>
   <div class="break"></div>
     <div class="inputField">
-        <label for="brushSize">Brush Size (px):</label>
+        <label for="brushSize">Brush Size (5 to 35 px):</label>
         <input id="brushSize" type="number" autocomplete="off" style='font-size: 1em; max-width: 100px;'/>
         <a id="brushSizeError">*</a>
     </div>
@@ -124,6 +133,8 @@ p {
             <option value="false">Off</option>
         </select>
     </div>
+    <div class="break"></div>
+    <p id="maxScore">Calibrated Max Score: ERROR</p>
 </div>
 
 <!-- Settings relevant to practice mode -->
@@ -189,6 +200,7 @@ p {
 <script src="gen-authenticate.js"></script>
 <script>
 
+//Create figure selector from array of figures
 for (let i = 0; i < figures.length; i++){
     var opt = document.createElement('option');
     opt.value = i;
@@ -200,6 +212,8 @@ for (let i = 0; i < figures.length; i++){
 for (const [key, value] of Object.entries(defaultSettings)) {
     document.getElementById(key).value = JSON.parse(localStorage[key]);
 };
+document.getElementById("maxScore").innerHTML = "Calibrated Max Score: " + JSON.parse(localStorage["maxScoreValue"]);
+document.getElementById("version").innerHTML = "Vers: " + VERSION;
 
 function changePage(destination) {
     if (!checkValidEntries()) { //Check for any invalid entries
@@ -236,16 +250,19 @@ function checkValidEntries() {
 
         if (element.type != "number") continue; //Only number fields allow for bad inputs
 
-        errorFlag = errorFlag || !isNumeric(element.value) || element.value == ""; //Non-numeric or empty imput
-        errorFlag = errorFlag || (element.id.includes("Percentage") && parseInt(element.value) > 100); //>100 on a percentage
-        errorFlag = errorFlag || (element.id.includes("brushSize") && (parseInt(element.value) < 5 || parseInt(element.value) > 35));
-        //Check if a number field contains a valid number (percentage inputs must be <= 100)
-        if (errorFlag) {
+        let nonNumericErr = !isNumeric(element.value) || element.value == ""; //Non-numeric, negative, or empty imput
+        let badBrushSize = element.id.includes("brushSize") && (parseInt(element.value) < 5 || parseInt(element.value) > 35);
+
+        let fieldError = nonNumericErr || badBrushSize;
+
+        //Flag and wipe the offending fields
+        if (fieldError) {
             document.getElementById(element.id + "Error").style.display = "inline-block";
             element.value = "";
         } else {
             document.getElementById(element.id + "Error").style.display = "none";
         }
+        errorFlag = errorFlag || fieldError;
     }
     return !errorFlag; //Return true if all entries are valid
 }
@@ -260,7 +277,7 @@ function changePassword() {
 }
 
 function isNumeric(value) {
-    //Return true if given number/string is a positive whole number
+    //Return true if given number/string is a positive number
     return /^[+]?([.]\d+|\d+([.]\d+)?)$/.test(value);
 }
 </script>
