@@ -1,5 +1,5 @@
 function authenticate (value) {
-    // return true;
+    return false;
 
     let proctorPassword;
     try {
