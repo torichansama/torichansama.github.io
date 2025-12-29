@@ -13,7 +13,7 @@ function endTest() {
 
     if (ENABLE_SCORING) {
         isFinalScoring = true;
-        setTimeout(() => {scoreFigure(false)}, 500);
+        setTimeout(() => {scoreFigure()}, 500);
     } else {
         location.href = "index.html";
     }
@@ -35,7 +35,6 @@ var score_area_midpoint;
 var findMaxScore;
 var figureScale;
 var scoreCanvas;
-var snapshotTiles = [...Array(SCORE_CANVAS_TILES_W)].map(e => Array(SCORE_CANVAS_TILES_W));
 
 function computeScoringConstants() {
     //Create canvas tile
@@ -55,7 +54,7 @@ function computeScoringConstants() {
     scoreCtx.fillStyle = "red";
     scoreCtx.lineCap = "round";
     scoreCtx.lineJoin = "round";
-    
+
     score_area_total_size = SCORE_AREA_TILE_SIZE*SCORE_CANVAS_TILES_W;
     score_area_midpoint = score_area_total_size/2;
 
@@ -84,7 +83,7 @@ function computeScoringConstants() {
     outerPath.lineTo(coords.outerX, coords.outerY);
 }
 
-function scoreFigure(onlyNeedSnapshot) {
+function scoreFigure() {
     scoreInc = 0;
     console.log("Scoring...");
 
@@ -132,14 +131,6 @@ function scoreFigure(onlyNeedSnapshot) {
                 });
                 scoreCtx.translate(tilingOffsetX, tilingOffsetY);
             }
-
-            // if(onlyNeedSnapshot) {
-            //     scoreTileImgData = scoreCanvas.toDataURL("image/png");
-            //     snapshotTiles[x][y] = new Image;
-            //     snapshotTiles[x][y].src = scoreTileImgData;
-
-            //     continue;
-            // }
 
             //Create an empty image data that will be used to show a debug rendering
             let debugImgData;

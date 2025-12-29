@@ -40,69 +40,33 @@ function gridCtxRedraw() {
     if (DEBUG_VIEW) updateDebugView();
 }
 
-function grabSnapshot() {
-    strokeStartIndex = strokes.length;
-
-    for(let i = 0; i < strokeStartIndex; i++) {
-        stroke = strokes[i];
-
-        if (stroke.strokeColor == DRAW_COLOR) {
-            copyCtx.globalCompositeOperation = "source-over";
-        } else {
-            copyCtx.globalCompositeOperation = "destination-out";
-        }
-        let drawToScoreScale = 1;
-        copyCtx.lineWidth = stroke.brushSize*2*drawToScoreScale;
-        //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
-        if (stroke.x.length == 1) { 
-            circle(Math.round(stroke.x[0]*drawToScoreScale+W/2), Math.round(stroke.y[0]*drawToScoreScale+H/2), stroke.brushSize*drawToScoreScale, true, copyCtx);
-            return;
-        }
-
-        copyCtx.beginPath();
-        copyCtx.moveTo(Math.round(stroke.x[0]*drawToScoreScale+W/2), Math.round(stroke.y[0]*drawToScoreScale+H/2))
-        for (let i = 1; i < stroke.x.length; i++) {
-            copyCtx.lineTo(Math.round(stroke.x[i]*drawToScoreScale+W/2), Math.round(stroke.y[i]*drawToScoreScale+H/2));
-        }
-        copyCtx.stroke();
-    };
-}
-
 //Drawing the content of the draw canvas-----------------------------------------------------------
 function drawCtxRedraw() {
     drawCtx.clearRect(0, 0, W, H);
 
-    if (strokeStartIndex > 0) {;
-        drawCtx.globalCompositeOperation = "source-over";
-        drawCtx.drawImage(copyCanvas, offsetX-(W/2)*zoom, offsetY-(H/2)*zoom, W*zoom, H*zoom);
-    }
+    drawCtx.setTransform(scale*zoom, 0, 0, scale*zoom, offsetX*scale, offsetY*scale);
 
     //Drawing strokes using one continuous line
     for(let i = strokeStartIndex; i < strokes.length; i++) {
         let stroke = strokes[i];
 
-        if (stroke.strokeColor == DRAW_COLOR) {
-            drawCtx.globalCompositeOperation = "source-over";
-        } else {
-            drawCtx.globalCompositeOperation = "destination-out";
-        }
+        drawCtx.globalCompositeOperation = stroke.strokeColor == DRAW_COLOR ? "source-over" : "destination-out";
+        
         drawCtx.strokeStyle = stroke.strokeColor;
-        drawCtx.fillStyle = stroke.strokeColor;
-        drawCtx.lineWidth = stroke.brushSize*zoom*2;
-
-        if (stroke.x.length == 1) { //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
-            circle(stroke.x[0]*zoom+offsetX, stroke.y[0]*zoom+offsetY, stroke.brushSize*zoom, true, drawCtx);
-            continue;
-        }
-
+        drawCtx.lineWidth = stroke.brushSize*2;
+        
         drawCtx.beginPath();
-        drawCtx.moveTo(stroke.x[0]*zoom+offsetX, stroke.y[0]*zoom+offsetY)
-        for (let i = 1; i < stroke.x.length; i++) {
-            drawCtx.lineTo(stroke.x[i]*zoom+offsetX, stroke.y[i]*zoom+offsetY);
+        drawCtx.moveTo(stroke.x[0], stroke.y[0])
+        if (stroke.x.length <= 1) { //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
+            drawCtx.lineTo(stroke.x[0], stroke.y[0]);
+        } else {
+            for (let i = 1; i < stroke.x.length; i++) {
+                drawCtx.lineTo(stroke.x[i], stroke.y[i]);
+            }
         }
         drawCtx.stroke();
     };
-    // drawCtx.drawImage(copyCanvas, dx, dy, dWidth, dHeight);
+    drawCtx.setTransform(scale, 0, 0, scale, 0, 0);
 }
 
 //Drawing the content of the figure canvas---------------------------------------------------------

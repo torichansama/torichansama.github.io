@@ -9,9 +9,7 @@
 <body>
 <!-- Canvas stack for background grid, drawing, and rendering the figure -->
 <canvas id="gridCanvas"></canvas>    
-<canvas id="drawCanvas"></canvas>    
-<!-- <canvas id="copyCanvas"></canvas> -->
-<canvas id="copyCanvas" style="display: none;"></canvas>
+<canvas id="drawCanvas"></canvas>
 <canvas id="figureCanvas"></canvas>
 
 <!-- Timer -->
@@ -88,9 +86,6 @@ var drawCtx = drawCanvas.getContext("2d", { willReadFrequently: false, aplha: fa
 var figureCanvas = document.getElementById('figureCanvas')
 var figureCtx = figureCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
 
-var copyCanvas = document.getElementById('copyCanvas')
-var copyCtx = copyCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
-
 var canvasCol = document.getElementsByTagName("canvas");
 for (let i = 0; i < canvasCol.length; i++) {
     canvasCol[i].style.width = `${W}px`;
@@ -103,7 +98,6 @@ for (let i = 0; i < canvasCol.length; i++) {
 gridCtx.scale(scale, scale);
 drawCtx.scale(scale, scale);
 figureCtx.scale(scale, scale);
-copyCtx.scale(scale, scale);
 
 //Color of the grid
 gridCtx.strokeStyle = "grey";
@@ -115,11 +109,6 @@ figureCtx.strokeStyle = "black";
 figureCtx.lineCap = "butt";
 figureCtx.lineJoin = "butt";
 figureCtx.lineWidth = 1.9;
-
-copyCtx.strokeStyle = DRAW_COLOR;
-copyCtx.fillStyle = DRAW_COLOR;
-copyCtx.lineCap = "round";
-copyCtx.lineJoin = "round";
 
 //Variable Declarations----------------------------------------------------------------------------
 var oldGridSize = GRID_SIZE;
@@ -165,7 +154,6 @@ function extendCurrentStroke (rawX, rawY, zoom) {
     lastStrokeX = rawX;
     lastStrokeY = rawY;
 }
-
 
 //Define prompts (modals) specific to test----------------------------------------------------------------------
 // Prompts must be called with activatePrompt(prompt_to_activate)

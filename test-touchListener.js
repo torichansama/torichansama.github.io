@@ -140,7 +140,7 @@ figureCanvas.addEventListener("touchend", e => { //Clear the Eraser Outline
     }
     if (currentStroke != undefined) {
         currentStroke = undefined;
-        if (LIVE_SCORING) scoreFigure(false);
+        if (LIVE_SCORING) scoreFigure();
     }
     
     // setDebugInfo("Raw Tx", Math.round(strokes[strokes.length-1].x[0]*100)/100);
