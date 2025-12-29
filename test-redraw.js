@@ -40,12 +40,19 @@ function gridCtxRedraw() {
     if (DEBUG_VIEW) updateDebugView();
 }
 
+function grabSnapshot() {
+    copyCtx.drawImage(drawCanvas, 0, 0);
+    strokeStartIndex = strokes.length;
+}
+
 //Drawing the content of the draw canvas-----------------------------------------------------------
 function drawCtxRedraw() {
     drawCtx.clearRect(0, 0, W, H);
 
     //Drawing strokes using one continuous line
-    strokes.forEach(stroke => {
+    for(let i = strokeStartIndex; i < strokes.length; i++) {
+        let stroke = strokes[i];
+
         if (stroke.strokeColor == DRAW_COLOR) {
             drawCtx.globalCompositeOperation = "source-over";
         } else {
@@ -66,7 +73,12 @@ function drawCtxRedraw() {
             drawCtx.lineTo(stroke.x[i]*zoom+offsetX, stroke.y[i]*zoom+offsetY);
         }
         drawCtx.stroke();
-    });
+    };
+    drawCtx.globalCompositeOperation = "source-over";
+
+
+    drawCtx.drawImage(copyCanvas, offsetX-(W/2)*zoom, offsetY-(H/2)*zoom, W*zoom, H*zoom);
+    // drawCtx.drawImage(copyCanvas, dx, dy, dWidth, dHeight);
 }
 
 //Drawing the content of the figure canvas---------------------------------------------------------

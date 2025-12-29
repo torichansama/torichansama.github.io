@@ -142,7 +142,7 @@ try {
 if (localStorage["maxScoreValue"] == undefined || prevVersion != VERSION) {
     activatePrompt(initializing);
     findMaxScore = true;
-    computeScoringConstants(true);
+    computeScoringConstants();
     setTimeout(scoreFigure, 500);
 }
 localStorage["VERSION"] = JSON.stringify(VERSION);

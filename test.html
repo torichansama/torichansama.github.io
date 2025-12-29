@@ -10,6 +10,8 @@
 <!-- Canvas stack for background grid, drawing, and rendering the figure -->
 <canvas id="gridCanvas"></canvas>    
 <canvas id="drawCanvas"></canvas>    
+<!-- <canvas id="copyCanvas"></canvas> -->
+<canvas id="copyCanvas" style="display: none;"></canvas>
 <canvas id="figureCanvas"></canvas>
 
 <!-- Timer -->
@@ -85,6 +87,9 @@ var drawCtx = drawCanvas.getContext("2d", { willReadFrequently: false, aplha: fa
 var figureCanvas = document.getElementById('figureCanvas')
 var figureCtx = figureCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
 
+var copyCanvas = document.getElementById('copyCanvas')
+var copyCtx = copyCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
+
 var canvasCol = document.getElementsByTagName("canvas");
 for (let i = 0; i < canvasCol.length; i++) {
     canvasCol[i].style.width = `${W}px`;
@@ -97,6 +102,7 @@ for (let i = 0; i < canvasCol.length; i++) {
 gridCtx.scale(scale, scale);
 drawCtx.scale(scale, scale);
 figureCtx.scale(scale, scale);
+// copyCtx.scale(0.5, 0.5);
 
 //Color of the grid
 gridCtx.strokeStyle = "grey";
@@ -138,6 +144,7 @@ var liveScoreDisplay = document.getElementById("liveScore");
 var debugData = [];
 
 var strokes = [];
+var strokeStartIndex = 0;
 function PenStroke (xStart, yStart, strokeColor, zoom) {
     this.x = [(xStart-offsetX)/zoom];
     this.y = [(yStart-offsetY)/zoom];
@@ -184,7 +191,7 @@ var loading = new Prompt("Scoring...", "rgba(240,240,240,1)", [
 sessionStorage.isTest = JSON.stringify("false"); //Clear any previously set isTest flag 
 
 findMaxScore = false;
-computeScoringConstants(false);
+computeScoringConstants();
 mainRedraw(); //Draw main content
 
 activatePrompt(handedness); //Call handedness prompt

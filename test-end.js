@@ -27,15 +27,15 @@ const SCORE_CANVAS_TILES_W = 5; //□□□□
 
 var isFinalScoring = false;
 var scoreInc = 0;
-var drawToScoreScale;
 var innerPath = new Path2D();
 var outerPath = new Path2D();
 var scoreCtx;
 var score_area_total_size;
 var score_area_midpoint;
 var findMaxScore;
+var figureScale;
 
-function computeScoringConstants(maxScoreOnly) {
+function computeScoringConstants() {
     //Create canvas tile
     let canvas = document.createElement("canvas");
     canvas.id = "scoreCanvas";
@@ -48,7 +48,7 @@ function computeScoringConstants(maxScoreOnly) {
     canvas.style.display = "none";
 
     document.body.appendChild(canvas);
-    scoreCtx = canvas.getContext("2d", { willReadFrequently: false, aplha: false });
+    scoreCtx = canvas.getContext("2d", { willReadFrequently: true, aplha: false });
 
     score_area_total_size = SCORE_AREA_TILE_SIZE*SCORE_CANVAS_TILES_W;
     score_area_midpoint = score_area_total_size/2;
@@ -56,10 +56,7 @@ function computeScoringConstants(maxScoreOnly) {
     //Calculate the nessecary scaling factors
     let xScale = (score_area_midpoint-500*SCORE_CANVAS_TILES_W)/(SELECTED_FIGURE.width/2);
     let yScale = (score_area_midpoint-500*SCORE_CANVAS_TILES_W)/(SELECTED_FIGURE.maxY-AVG_Y);
-    let figureScale = Math.min(xScale, yScale); //Scale of figure in scoring mode
-    if (!maxScoreOnly) {
-        drawToScoreScale = figureScale/SCALE; //Realtive size of scoring figure compared to drawing figure
-    }
+    figureScale = Math.min(xScale, yScale); //Scale of figure in scoring mode
 
     //Create the inner and outer paths of the figure at scoring scale
     let minAngle = SELECTED_FIGURE.minTheta;
@@ -108,6 +105,8 @@ function scoreFigure() {
             //If were looking to find the maximum score, fill entire screen with "stroke"
             if (findMaxScore) {scoreCtx.fillRect(0, 0, SCORE_AREA_TILE_SIZE, SCORE_AREA_TILE_SIZE);}
             else {
+                let drawToScoreScale = figureScale/SCALE;
+
                 scoreCtx.translate(-tilingOffsetX, -tilingOffsetY);
                 strokes.forEach(stroke => { //Draw the strokes to canavs
                     if (stroke.strokeColor == DRAW_COLOR) {
