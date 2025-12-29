@@ -11,7 +11,7 @@ const defaultSettings = {
     liveScoring: "false",
 }
 
-const COMP_TESTING = true; //Use for correct screen sizing on non-iOS devices
+const COMP_TESTING = false; //Use for correct screen sizing on non-iOS devices
 const DEBUG_VIEW = false; //Display debug stack on side of screen (Not super functional)
 const SCORE_DEBUG = false; //Set this to view the scoring process for debugging purposes (Not super functional)
-const VERSION = "10.5.9";
+const VERSION = "10.6.0";
