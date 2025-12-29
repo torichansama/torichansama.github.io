@@ -20,8 +20,7 @@
 
 <div id="sideDiv">
     <!-- Buttons -->
-    <!-- <button class="ripple" id="resetZoom" onclick="zoomOut()"><i class="fa fa-compress"></i></button> -->
-    <button class="ripple" id="resetZoom" onclick="grabSnapshot()"><i class="fa fa-compress"></i></button>
+    <button class="ripple" id="resetZoom" onclick="zoomOut()"><i class="fa fa-compress"></i></button>
 
     <!-- Brush/Eraser Toggle -->
     <div id="toggleDiv">
@@ -138,7 +137,6 @@ var liveScoreDisplay = document.getElementById("liveScore");
 var debugData = [];
 
 var strokes = [];
-var strokeStartIndex = 0;
 function PenStroke (xStart, yStart, strokeColor, zoom) {
     this.x = [(xStart-offsetX)/zoom];
     this.y = [(yStart-offsetY)/zoom];
