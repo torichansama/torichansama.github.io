@@ -144,13 +144,23 @@ function PenStroke (xStart, yStart, strokeColor, zoom) {
     this.strokeColor = strokeColor;
     lastStrokeX = xStart;
     lastStrokeY = yStart;
+    this.minX = this.x[0]-this.brushSize;
+    this.maxX = this.x[0]+this.brushSize;
+    this.minY = this.y[0]-this.brushSize;
+    this.maxY = this.y[0]+this.brushSize;
 }
 function extendCurrentStroke (rawX, rawY, zoom) {
     if (currentStroke == undefined) return;
-    currentStroke.x.push((rawX-offsetX)/zoom);
-    currentStroke.y.push((rawY-offsetY)/zoom);
+    let x = (rawX-offsetX)/zoom;
+    let y = (rawY-offsetY)/zoom;
+    currentStroke.x.push(x);
+    currentStroke.y.push(y);
     lastStrokeX = rawX;
     lastStrokeY = rawY;
+    currentStroke.minX = Math.min(currentStroke.minX, x-currentStroke.brushSize);
+    currentStroke.maxX = Math.max(currentStroke.maxX, x+currentStroke.brushSize);
+    currentStroke.minY = Math.min(currentStroke.minY, y-currentStroke.brushSize);
+    currentStroke.maxY = Math.max(currentStroke.maxY, y+currentStroke.brushSize);
 }
 
 //Define prompts (modals) specific to test----------------------------------------------------------------------
@@ -356,7 +366,7 @@ function decrementTimer() {
 function zoomOut() {
     zoom = 1;
     offsetX = W/2;
-    offsetY = H/2 + 50;
+    offsetY = H/2;
     zoomX = offsetX;
     zoomY = offsetY;
     oldGridSize = GRID_SIZE*zoom;
