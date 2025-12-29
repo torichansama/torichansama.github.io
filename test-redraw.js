@@ -41,13 +41,41 @@ function gridCtxRedraw() {
 }
 
 function grabSnapshot() {
-    copyCtx.drawImage(drawCanvas, 0, 0);
     strokeStartIndex = strokes.length;
+
+    for(let i = 0; i < strokeStartIndex; i++) {
+        stroke = strokes[i];
+
+        if (stroke.strokeColor == DRAW_COLOR) {
+            copyCtx.globalCompositeOperation = "source-over";
+        } else {
+            copyCtx.globalCompositeOperation = "destination-out";
+        }
+        let drawToScoreScale = 1;
+        copyCtx.lineWidth = stroke.brushSize*2*drawToScoreScale;
+        //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
+        if (stroke.x.length == 1) { 
+            circle(Math.round(stroke.x[0]*drawToScoreScale+W/2), Math.round(stroke.y[0]*drawToScoreScale+H/2), stroke.brushSize*drawToScoreScale, true, copyCtx);
+            return;
+        }
+
+        copyCtx.beginPath();
+        copyCtx.moveTo(Math.round(stroke.x[0]*drawToScoreScale+W/2), Math.round(stroke.y[0]*drawToScoreScale+H/2))
+        for (let i = 1; i < stroke.x.length; i++) {
+            copyCtx.lineTo(Math.round(stroke.x[i]*drawToScoreScale+W/2), Math.round(stroke.y[i]*drawToScoreScale+H/2));
+        }
+        copyCtx.stroke();
+    };
 }
 
 //Drawing the content of the draw canvas-----------------------------------------------------------
 function drawCtxRedraw() {
     drawCtx.clearRect(0, 0, W, H);
+
+    if (strokeStartIndex > 0) {;
+        drawCtx.globalCompositeOperation = "source-over";
+        drawCtx.drawImage(copyCanvas, offsetX-(W/2)*zoom, offsetY-(H/2)*zoom, W*zoom, H*zoom);
+    }
 
     //Drawing strokes using one continuous line
     for(let i = strokeStartIndex; i < strokes.length; i++) {
@@ -64,7 +92,7 @@ function drawCtxRedraw() {
 
         if (stroke.x.length == 1) { //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
             circle(stroke.x[0]*zoom+offsetX, stroke.y[0]*zoom+offsetY, stroke.brushSize*zoom, true, drawCtx);
-            return;
+            continue;
         }
 
         drawCtx.beginPath();
@@ -74,10 +102,6 @@ function drawCtxRedraw() {
         }
         drawCtx.stroke();
     };
-    drawCtx.globalCompositeOperation = "source-over";
-
-
-    drawCtx.drawImage(copyCanvas, offsetX-(W/2)*zoom, offsetY-(H/2)*zoom, W*zoom, H*zoom);
     // drawCtx.drawImage(copyCanvas, dx, dy, dWidth, dHeight);
 }
 

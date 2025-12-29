@@ -13,7 +13,7 @@ function endTest() {
 
     if (ENABLE_SCORING) {
         isFinalScoring = true;
-        setTimeout(scoreFigure, 500);
+        setTimeout(() => {scoreFigure(false)}, 500);
     } else {
         location.href = "index.html";
     }
@@ -34,22 +34,28 @@ var score_area_total_size;
 var score_area_midpoint;
 var findMaxScore;
 var figureScale;
+var scoreCanvas;
+var snapshotTiles = [...Array(SCORE_CANVAS_TILES_W)].map(e => Array(SCORE_CANVAS_TILES_W));
 
 function computeScoringConstants() {
     //Create canvas tile
-    let canvas = document.createElement("canvas");
-    canvas.id = "scoreCanvas";
+    scoreCanvas = document.createElement("canvas");
+    scoreCanvas.id = "scoreCanvas";
 
-    canvas.width = SCORE_AREA_TILE_SIZE; 
-    canvas.height = SCORE_AREA_TILE_SIZE;
+    scoreCanvas.width = SCORE_AREA_TILE_SIZE; 
+    scoreCanvas.height = SCORE_AREA_TILE_SIZE;
 
     // canvas.style.width = `${H}px`; //Resize the drawing canvas to be SCORE_AREA_TILE_SIZE, but reduce the CSS size to fit on screen so it can be seen while debugging
     // canvas.style.height = `${H}px`;
-    canvas.style.display = "none";
+    scoreCanvas.style.display = "none";
 
-    document.body.appendChild(canvas);
-    scoreCtx = canvas.getContext("2d", { willReadFrequently: true, aplha: false });
-
+    document.body.appendChild(scoreCanvas);
+    scoreCtx = scoreCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
+    scoreCtx.strokeStyle = "red";
+    scoreCtx.fillStyle = "red";
+    scoreCtx.lineCap = "round";
+    scoreCtx.lineJoin = "round";
+    
     score_area_total_size = SCORE_AREA_TILE_SIZE*SCORE_CANVAS_TILES_W;
     score_area_midpoint = score_area_total_size/2;
 
@@ -78,13 +84,9 @@ function computeScoringConstants() {
     outerPath.lineTo(coords.outerX, coords.outerY);
 }
 
-function scoreFigure() {
+function scoreFigure(onlyNeedSnapshot) {
     scoreInc = 0;
     console.log("Scoring...");
-    let DEBUG_minRad = 999;
-    let DEBUG_lastX = 0;
-    let DEBUG_lastRounded = "false";
-    let DEBUG_lastY = 0;
 
     for (let x = 0; x < SCORE_CANVAS_TILES_W; x++) { //Iterate through scoring tiles and set the context each time
         for (let y = 0; y < SCORE_CANVAS_TILES_W; y++) {
@@ -95,13 +97,9 @@ function scoreFigure() {
 
             scoreCtx.clearRect(0, 0, SCORE_AREA_TILE_SIZE, SCORE_AREA_TILE_SIZE); //Clear canvas before we start
 
-            //Render scaled strokes to scoring canvas
-            scoreCtx.strokeStyle = "red";
-            scoreCtx.fillStyle = "red";
-            scoreCtx.lineCap = "round";
-            scoreCtx.lineJoin = "round";
             scoreCtx.globalCompositeOperation = "source-over";
             
+            //Render scaled strokes to scoring canvas
             //If were looking to find the maximum score, fill entire screen with "stroke"
             if (findMaxScore) {scoreCtx.fillRect(0, 0, SCORE_AREA_TILE_SIZE, SCORE_AREA_TILE_SIZE);}
             else {
@@ -115,18 +113,12 @@ function scoreFigure() {
                         scoreCtx.globalCompositeOperation = "destination-out";
                     }
                     scoreCtx.lineWidth = stroke.brushSize*2*drawToScoreScale;
-            
-                    DEBUG_lastX = Math.round(stroke.x[0]*drawToScoreScale+score_area_midpoint);
-                    DEBUG_lastY = Math.round(stroke.y[0]*drawToScoreScale+score_area_midpoint);
                     
                     //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
                     // if (stroke.x.length == 1 || Math.hypot(stroke.x[0]-stroke.x[stroke.x.length-1], stroke.y[0]-stroke.y[stroke.x.length-1]) < 4) { 
                     if (stroke.x.length == 1 || 
                         (Math.round(stroke.x[0]*drawToScoreScale+score_area_midpoint) == Math.round(stroke.x[stroke.x.length-1]*drawToScoreScale+score_area_midpoint) &&  
                         Math.round(stroke.y[0]*drawToScoreScale+score_area_midpoint) == Math.round(stroke.y[stroke.y.length-1]*drawToScoreScale+score_area_midpoint))) { 
-                        // console.log(stroke.brushSize*drawToScoreScale);
-                        DEBUG_lastRounded = "true";
-                        DEBUG_minRad = Math.min(DEBUG_minRad, stroke.brushSize*drawToScoreScale);
                         circle(Math.round(stroke.x[0]*drawToScoreScale+score_area_midpoint), Math.round(stroke.y[0]*drawToScoreScale+score_area_midpoint), stroke.brushSize*drawToScoreScale, true, scoreCtx);
                         return;
                     }
@@ -140,6 +132,14 @@ function scoreFigure() {
                 });
                 scoreCtx.translate(tilingOffsetX, tilingOffsetY);
             }
+
+            // if(onlyNeedSnapshot) {
+            //     scoreTileImgData = scoreCanvas.toDataURL("image/png");
+            //     snapshotTiles[x][y] = new Image;
+            //     snapshotTiles[x][y].src = scoreTileImgData;
+
+            //     continue;
+            // }
 
             //Create an empty image data that will be used to show a debug rendering
             let debugImgData;

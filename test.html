@@ -22,7 +22,8 @@
 
 <div id="sideDiv">
     <!-- Buttons -->
-    <button class="ripple" id="resetZoom" onclick="zoomOut()"><i class="fa fa-compress"></i></button>
+    <!-- <button class="ripple" id="resetZoom" onclick="zoomOut()"><i class="fa fa-compress"></i></button> -->
+    <button class="ripple" id="resetZoom" onclick="grabSnapshot()"><i class="fa fa-compress"></i></button>
 
     <!-- Brush/Eraser Toggle -->
     <div id="toggleDiv">
@@ -102,7 +103,7 @@ for (let i = 0; i < canvasCol.length; i++) {
 gridCtx.scale(scale, scale);
 drawCtx.scale(scale, scale);
 figureCtx.scale(scale, scale);
-// copyCtx.scale(0.5, 0.5);
+copyCtx.scale(scale, scale);
 
 //Color of the grid
 gridCtx.strokeStyle = "grey";
@@ -115,12 +116,16 @@ figureCtx.lineCap = "butt";
 figureCtx.lineJoin = "butt";
 figureCtx.lineWidth = 1.9;
 
+copyCtx.strokeStyle = DRAW_COLOR;
+copyCtx.fillStyle = DRAW_COLOR;
+copyCtx.lineCap = "round";
+copyCtx.lineJoin = "round";
 
 //Variable Declarations----------------------------------------------------------------------------
 var oldGridSize = GRID_SIZE;
 
 var offsetX = W/2;
-var offsetY = H/2+50;
+var offsetY = H/2;
 var zoomX = 0;
 var zoomY = 0;
 var zoom = 1;

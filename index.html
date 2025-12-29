@@ -110,7 +110,8 @@ button {
 <script src="gen-figures.js"></script>
 <script src="gen-config.js"></script>
 <script src="gen-prompt.js"></script>
-<script src="gen-authenticate.js"></script>
+<script src="gen-authenticate.js"></script> 
+<!-- Authenticate is not used here, but including it seems to update what code is cached on the iOS device -->
 <script src="test-end.js"></script>
 
 <script>
@@ -143,7 +144,7 @@ if (localStorage["maxScoreValue"] == undefined || prevVersion != VERSION) {
     activatePrompt(initializing);
     findMaxScore = true;
     computeScoringConstants();
-    setTimeout(scoreFigure, 500);
+    setTimeout(() => {scoreFigure(false)}, 500);
 }
 localStorage["VERSION"] = JSON.stringify(VERSION);
 </script>
