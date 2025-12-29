@@ -135,6 +135,7 @@ var rightHanded = true;
 
 var liveScoreDisplay = document.getElementById("liveScore");
 var debugData = [];
+let avgLatency = 0;
 
 var strokes = [];
 function PenStroke (xStart, yStart, strokeColor, zoom) {
@@ -217,10 +218,12 @@ function mainRedraw() {
     offsetX = clamp(offsetX, W-W*0.51*zoom, W*0.51*zoom);
     offsetY = clamp(offsetY, H-H*0.53*zoom, H*0.53*zoom);
 
+    let startTime = performance.now();
     //Call each canvas' redraw functions
     gridCtxRedraw();
     drawCtxRedraw();
     figureCtxRedraw();
+    avgLatency = 0.9*avgLatency + 0.1*(performance.now()-startTime);
 }    
 
 

@@ -82,12 +82,12 @@ function drawCtxRedraw() {
         }
         drawCtx.stroke();
     };
-    console.log(numStrokesRendered);
     drawCtx.setTransform(scale, 0, 0, scale, 0, 0);
 
     drawCtx.globalCompositeOperation = "source-over";
     drawCtx.fillStyle = "black";
     drawCtx.fillText("# Strokes: " + numStrokesRendered, 5, H-15);
+    drawCtx.fillText("Avg Latency: " + avgLatency, 5, H-30);
 }
 
 //Drawing the content of the figure canvas---------------------------------------------------------
