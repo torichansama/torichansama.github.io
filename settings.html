@@ -108,6 +108,7 @@ p {
         <label for="selectedFigure">Selected Figure:</label>
         <select id="selectedFigure" style='font-size: 1em;'></select> <!-- Figures are added automatically -->
     </div>
+    <p id="maxScore">Calibrated Max Score: ERROR</p>
         <div class="break"></div>
     <div class="inputField">
         <label for="displayGrid">Grid Lines:</label>
@@ -116,7 +117,7 @@ p {
             <option value="false">Off</option>
         </select>
     </div>
-  <div class="break"></div>
+    <div class="break"></div>
     <div class="inputField">
         <label for="brushSize">Brush Size (5 to 35 px):</label>
         <input id="brushSize" type="number" autocomplete="off" style='font-size: 1em; max-width: 100px;'/>
@@ -135,9 +136,6 @@ p {
             <option value="false">Off</option>
         </select>
     </div>
-    <div class="break"></div>
-    <p id="maxScore">Calibrated Max Score: ERROR</p>
-    <div class="break"></div>
 </div>
 
 <!-- Settings relevant to practice mode -->
@@ -184,7 +182,7 @@ p {
         <label for="adminPassword">Admin Password:</label>
         <input id="adminPassword" type="password" required autocomplete="off" style='font-size: 1em;'/>
     </div>
- <div class="break"></div>
+    <div class="break"></div>
     <div class="inputField">
         <label for="proctorPassword">New Proctor Password:</label>
         <input id="proctorPassword" type="text" required autocomplete="off" style='font-size: 1em;' autocorrect="off" autocapitalize="none"/>
@@ -205,7 +203,7 @@ p {
 <script src="gen-authenticate.js"></script>
 <script src="gen-prompt.js"></script>
 <script>
-
+//Prompt to verify password
 var verify = new Prompt("Are you sure you want to reset? <br></br> All settings and the proctor password will be reset", "rgba(0,0,0,0.3)", [
     new PromptElement("button", "fa fa-check", "green", factoryReset),
     new PromptElement("button", "fa fa-times", "#6b0000", cancelPrompt)
