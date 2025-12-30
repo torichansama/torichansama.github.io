@@ -43,8 +43,13 @@ function gridCtxRedraw() {
 function grabSnapshot() {
     strokeStartIndex = strokes.length;
 
+    copyCtx.resetTransform();
+    copyCtx.clearRect(0, 0, COPY_W, COPY_W);
+
     let drawToCopyScale = COPY_W/W;
     copyCtx.setTransform(drawToCopyScale*zoom, 0, 0, drawToCopyScale*zoom, offsetX*drawToCopyScale, offsetY*drawToCopyScale);
+    copyCtx.fillStyle = "red";
+    circle(-10, 10, 10, true, copyCtx);
 
     //Drawing strokes using one continuous line
     for(let i = 0; i < strokes.length; i++) {
@@ -77,15 +82,19 @@ function grabSnapshot() {
 function drawCtxRedraw() {
     drawCtx.clearRect(0, 0, W, H);
 
-    if (strokeStartIndex > 0) {;
-        drawCtx.drawImage(copyCanvas, offsetX-(W/2)*zoom, offsetY-(H/2)*zoom, W*zoom, H*zoom);
-    }
+    // if (strokeStartIndex > 0) {;
+    //     drawCtx.drawImage(copyCanvas, offsetX-(W/2)*zoom, offsetY-(H/2)*zoom, W*zoom, H*zoom);
+    // }
+
 
     drawCtx.setTransform(scale*zoom, 0, 0, scale*zoom, offsetX*scale, offsetY*scale);
     let screenMinX = -offsetX/zoom;
     let screenMinY = -offsetY/zoom;
     let screenMaxX = (W-offsetX)/zoom;
     let screenMaxY = (H-offsetY)/zoom;
+
+    drawCtx.fillStyle = "green";
+    circle(10, 10, 10, true, drawCtx);
 
     let numStrokesRendered = 0;
 
