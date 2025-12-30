@@ -10,8 +10,8 @@
 <!-- Canvas stack for background grid, drawing, and rendering the figure -->
 <canvas id="gridCanvas"></canvas>    
 <canvas id="drawCanvas"></canvas>
-<canvas id="copyCanvas"></canvas>
-<!-- <canvas id="copyCanvas" style="display: none;"></canvas> -->
+<!-- <canvas id="copyCanvas"></canvas> -->
+<canvas id="copyCanvas" style="display: none;"></canvas>
 <canvas id="figureCanvas"></canvas>
 
 <!-- Timer -->
@@ -22,7 +22,8 @@
 
 <div id="sideDiv">
     <!-- Buttons -->
-    <button class="ripple" id="resetZoom" onclick="zoomOut()"><i class="fa fa-compress"></i></button>
+    <!-- <button class="ripple" id="resetZoom" onclick="zoomOut()"><i class="fa fa-compress"></i></button> -->
+    <button class="ripple" id="resetZoom" onclick="grabSnapshot()"><i class="fa fa-compress"></i></button>
 
     <!-- Brush/Eraser Toggle -->
     <div id="toggleDiv">
@@ -99,8 +100,9 @@ for (let i = 0; i < canvasCol.length; i++) {
     canvasCol[i].width = W*scale; 
     canvasCol[i].height = H*scale;
 }
+const COPY_H = H/W*COPY_W;
 copyCanvas.width = COPY_W; 
-copyCanvas.height = H/W*COPY_W;
+copyCanvas.height = COPY_H;
 
 gridCtx.scale(scale, scale);
 drawCtx.scale(scale, scale);

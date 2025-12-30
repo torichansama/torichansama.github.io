@@ -43,49 +43,39 @@ function gridCtxRedraw() {
 function grabSnapshot() {
     strokeStartIndex = strokes.length;
 
-    copyCtx.resetTransform();
-    copyCtx.clearRect(0, 0, COPY_W, COPY_W);
-
+    copyCtx.clearRect(0, 0, COPY_W, COPY_H);
     let drawToCopyScale = COPY_W/W;
-    copyCtx.setTransform(drawToCopyScale*zoom, 0, 0, drawToCopyScale*zoom, offsetX*drawToCopyScale, offsetY*drawToCopyScale);
-    copyCtx.fillStyle = "red";
-    circle(-10, 10, 10, true, copyCtx);
 
-    //Drawing strokes using one continuous line
-    for(let i = 0; i < strokes.length; i++) {
-        let stroke = strokes[i];
+    for(let i = 0; i < strokeStartIndex; i++) {
+        stroke = strokes[i];
+
         copyCtx.globalCompositeOperation = stroke.strokeColor == DRAW_COLOR ? "source-over" : "destination-out";
 
-        //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
-        if (Math.round(stroke.x[0]) == Math.round(stroke.x[stroke.x.length-1]) && Math.round(stroke.y[0]) == Math.round(stroke.y[stroke.y.length-1])) { 
-            copyCtx.setTransform(scale, 0, 0, scale, 0, 0);
-
+        if (stroke.x.length == 1) { 
             copyCtx.fillStyle = stroke.strokeColor;
-            circle(stroke.x[0]*zoom+offsetX, stroke.y[0]*zoom+offsetY, stroke.brushSize*zoom, true, copyCtx);
-            copyCtx.setTransform(scale*zoom, 0, 0, scale*zoom, offsetX*scale, offsetY*scale);   
-            continue;
+            circle(Math.round(stroke.x[0]*drawToCopyScale+COPY_W/2), Math.round(stroke.y[0]*drawToCopyScale+COPY_H/2), stroke.brushSize*drawToCopyScale, true, copyCtx);
+            return;
         }
 
         copyCtx.strokeStyle = stroke.strokeColor;
-        copyCtx.lineWidth = stroke.brushSize*2;
+        copyCtx.lineWidth = stroke.brushSize*2*drawToCopyScale;
 
         copyCtx.beginPath();
-        copyCtx.moveTo(stroke.x[0], stroke.y[0])
+        copyCtx.moveTo(Math.round(stroke.x[0]*drawToCopyScale+COPY_W/2), Math.round(stroke.y[0]*drawToCopyScale+COPY_H/2))
         for (let i = 1; i < stroke.x.length; i++) {
-            copyCtx.lineTo(stroke.x[i], stroke.y[i]);
+            copyCtx.lineTo(Math.round(stroke.x[i]*drawToCopyScale+COPY_W/2), Math.round(stroke.y[i]*drawToCopyScale+COPY_H/2));
         }
         copyCtx.stroke();
-    }
+    };
 }
 
 //Drawing the content of the draw canvas-----------------------------------------------------------
 function drawCtxRedraw() {
     drawCtx.clearRect(0, 0, W, H);
 
-    // if (strokeStartIndex > 0) {;
-    //     drawCtx.drawImage(copyCanvas, offsetX-(W/2)*zoom, offsetY-(H/2)*zoom, W*zoom, H*zoom);
-    // }
-
+    if (strokeStartIndex > 0) {;
+        drawCtx.drawImage(copyCanvas, offsetX-(W/2)*zoom, offsetY-(H/2)*zoom, W*zoom, H*zoom);
+    }
 
     drawCtx.setTransform(scale*zoom, 0, 0, scale*zoom, offsetX*scale, offsetY*scale);
     let screenMinX = -offsetX/zoom;
