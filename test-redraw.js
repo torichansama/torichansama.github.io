@@ -77,9 +77,9 @@ function grabSnapshot() {
 function drawCtxRedraw() {
     drawCtx.clearRect(0, 0, W, H);
 
-    // if (strokeStartIndex > 0) {;
-    //     drawCtx.drawImage(copyCanvas, offsetX-(W/2)*zoom, offsetY-(H/2)*zoom, W*zoom, H*zoom);
-    // }
+    if (strokeStartIndex > 0) {;
+        drawCtx.drawImage(copyCanvas, offsetX-(W/2)*zoom, offsetY-(H/2)*zoom, W*zoom, H*zoom);
+    }
 
     drawCtx.setTransform(scale*zoom, 0, 0, scale*zoom, offsetX*scale, offsetY*scale);
     let screenMinX = -offsetX/zoom;
@@ -94,9 +94,9 @@ function drawCtxRedraw() {
         let stroke = strokes[i];
         drawCtx.globalCompositeOperation = stroke.strokeColor == DRAW_COLOR ? "source-over" : "destination-out";
 
-        // if (!(stroke.minX < screenMaxX && stroke.maxX > screenMinX && stroke.minY < screenMaxY && stroke.maxY > screenMinY)) {
-        //     continue;
-        // }
+        if (!(stroke.minX < screenMaxX && stroke.maxX > screenMinX && stroke.minY < screenMaxY && stroke.maxY > screenMinY)) {
+            continue;
+        }
         numStrokesRendered++;
 
         //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
