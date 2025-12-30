@@ -10,6 +10,7 @@
 <!-- Canvas stack for background grid, drawing, and rendering the figure -->
 <canvas id="gridCanvas"></canvas>    
 <canvas id="drawCanvas"></canvas>
+<canvas id="copyCanvas" style="display: none;"></canvas>
 <canvas id="figureCanvas"></canvas>
 
 <!-- Timer -->
@@ -44,6 +45,7 @@
 var scale = window.devicePixelRatio;
 const W = COMP_TESTING ? window.innerWidth-90 : screen.height-90;
 const H = COMP_TESTING ? window.innerHeight : screen.width;
+const COPY_W = 4096;
 
 const GRID_SIZE = W/6;
 const RENDER_GRID = JSON.parse(localStorage.displayGrid) == "true";
@@ -85,14 +87,19 @@ var drawCtx = drawCanvas.getContext("2d", { willReadFrequently: false, aplha: fa
 var figureCanvas = document.getElementById('figureCanvas')
 var figureCtx = figureCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
 
+var copyCanvas = document.getElementById('copyCanvas')
+var copyCtx = copyCanvas.getContext("2d", { willReadFrequently: false, aplha: false });
+
 var canvasCol = document.getElementsByTagName("canvas");
 for (let i = 0; i < canvasCol.length; i++) {
     canvasCol[i].style.width = `${W}px`;
     canvasCol[i].style.height = `${H}px`;
-
+    
     canvasCol[i].width = W*scale; 
     canvasCol[i].height = H*scale;
 }
+copyCanvas.width = COPY_W; 
+copyCanvas.height = H/W*COPY_W;
 
 gridCtx.scale(scale, scale);
 drawCtx.scale(scale, scale);
@@ -103,6 +110,9 @@ gridCtx.strokeStyle = "grey";
 
 drawCtx.lineCap = "round";
 drawCtx.lineJoin = "round";
+
+copyCtx.lineCap = "round";
+copyCtx.lineJoin = "round";
 
 figureCtx.strokeStyle = "black";
 figureCtx.lineCap = "butt";
@@ -129,6 +139,7 @@ var currentStroke;
 var lastStrokeX;
 var lastStrokeY;
 var brushColor;
+var strokeStartIndex = 0;
 
 var activePrompt = null;
 var rightHanded = true;
