@@ -9,7 +9,7 @@
 <body>
 <!-- Canvas stack for background grid, drawing, and rendering the figure -->
 <canvas id="gridCanvas"></canvas>    
-<canvas id="drawCanvas"></canvas>
+<canvas id="drawCanvas" style="image-rendering:auto;"></canvas>
 <!-- <canvas id="copyCanvas"></canvas> -->
 <canvas id="copyCanvas" style="display: none;"></canvas>
 <canvas id="figureCanvas"></canvas>
@@ -22,8 +22,7 @@
 
 <div id="sideDiv">
     <!-- Buttons -->
-    <!-- <button class="ripple" id="resetZoom" onclick="zoomOut()"><i class="fa fa-compress"></i></button> -->
-    <button class="ripple" id="resetZoom" onclick="grabSnapshot()"><i class="fa fa-compress"></i></button>
+    <button class="ripple" id="resetZoom" onclick="zoomOut()"><i class="fa fa-compress"></i></button>
 
     <!-- Brush/Eraser Toggle -->
     <div id="toggleDiv">
@@ -53,6 +52,7 @@ const GRID_SIZE = W/6;
 const RENDER_GRID = JSON.parse(localStorage.displayGrid) == "true";
 
 const ZOOM_SENS = 0.002;
+const SNAPSHOT_ZOOM_THRESH = 5; //Zoom level above which strokes will be rendered with the snapshot system
 const MAX_ZOOM = 21; //34
 
 const IS_TEST = JSON.parse(sessionStorage.isTest) == "true";

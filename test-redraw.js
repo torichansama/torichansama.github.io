@@ -54,7 +54,7 @@ function grabSnapshot() {
         if (stroke.x.length == 1) { 
             copyCtx.fillStyle = stroke.strokeColor;
             circle(Math.round(stroke.x[0]*drawToCopyScale+COPY_W/2), Math.round(stroke.y[0]*drawToCopyScale+COPY_H/2), stroke.brushSize*drawToCopyScale, true, copyCtx);
-            return;
+            continue;
         }
 
         copyCtx.strokeStyle = stroke.strokeColor;
@@ -72,9 +72,12 @@ function grabSnapshot() {
 //Drawing the content of the draw canvas-----------------------------------------------------------
 function drawCtxRedraw() {
     drawCtx.clearRect(0, 0, W, H);
+    let drawStrokeStartIndex = 0;
 
-    if (strokeStartIndex > 0) {;
+    if (strokeStartIndex > 0 && zoom < SNAPSHOT_ZOOM_THRESH) {;
+        drawCtx.globalCompositeOperation = "source-over";
         drawCtx.drawImage(copyCanvas, offsetX-(W/2)*zoom, offsetY-(H/2)*zoom, W*zoom, H*zoom);
+        drawStrokeStartIndex = strokeStartIndex;
     }
 
     drawCtx.setTransform(scale*zoom, 0, 0, scale*zoom, offsetX*scale, offsetY*scale);
@@ -83,13 +86,10 @@ function drawCtxRedraw() {
     let screenMaxX = (W-offsetX)/zoom;
     let screenMaxY = (H-offsetY)/zoom;
 
-    drawCtx.fillStyle = "green";
-    circle(10, 10, 10, true, drawCtx);
-
     let numStrokesRendered = 0;
 
     //Drawing strokes using one continuous line
-    for(let i = strokeStartIndex; i < strokes.length; i++) {
+    for(let i = drawStrokeStartIndex; i < strokes.length; i++) {
         let stroke = strokes[i];
         drawCtx.globalCompositeOperation = stroke.strokeColor == DRAW_COLOR ? "source-over" : "destination-out";
 
@@ -124,6 +124,8 @@ function drawCtxRedraw() {
     drawCtx.fillStyle = "black";
     drawCtx.fillText("# Strokes: " + numStrokesRendered, 5, H-15);
     drawCtx.fillText("Avg Latency: " + avgLatency, 5, H-30);
+    drawCtx.fillText("Total Strokes: " + strokes.length, 5, H-45);
+    drawCtx.fillText("Zoom: " + zoom, 5, H-60);
 }
 
 //Drawing the content of the figure canvas---------------------------------------------------------
