@@ -2,7 +2,7 @@
 const defaultSettings = {
     selectedFigure: "0",
     displayGrid: "true",
-    brushSize: "5",
+    brushSize: "15",
     timerLengthMinutes: "5",
     practiceTimerLengthMinutes: "5",
     practiceTimer: "false",
@@ -11,7 +11,7 @@ const defaultSettings = {
     liveScoring: "false",
 }
 
-const COMP_TESTING = true; //Use for correct screen sizing on non-iOS devices
+const COMP_TESTING = false; //Use for correct screen sizing on non-iOS devices
 const DEBUG_VIEW = false; //Display debug stack on side of screen (Not super functional)
 const SCORE_DEBUG = false; //Set this to view the scoring process for debugging purposes (Not super functional)
-const VERSION = "10.6.9";
+const VERSION = "10.7.0";
