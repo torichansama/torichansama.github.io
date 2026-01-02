@@ -77,7 +77,7 @@ function drawCtxRedraw() {
     if (strokeStartIndex > 0 && zoom < SNAPSHOT_ZOOM_THRESH) {;
         drawCtx.globalCompositeOperation = "source-over";
         try {
-            drawCtx.drawImage(copyCanvass, offsetX-(W/2)*zoom, offsetY-(H/2)*zoom, W*zoom, H*zoom);
+            drawCtx.drawImage(copyCanvas, offsetX-(W/2)*zoom, offsetY-(H/2)*zoom, W*zoom, H*zoom);
         } catch (error) {
             drawCtx.fillStyle = "black";
             drawCtx.fillText(error, 5, 45);
