@@ -74,11 +74,17 @@ function drawCtxRedraw() {
     drawCtx.clearRect(0, 0, W, H);
     let drawStrokeStartIndex = 0;
 
-    // if (strokeStartIndex > 0 && zoom < SNAPSHOT_ZOOM_THRESH) {;
-    //     drawCtx.globalCompositeOperation = "source-over";
-    //     drawCtx.drawImage(copyCanvas, offsetX-(W/2)*zoom, offsetY-(H/2)*zoom, W*zoom, H*zoom);
-    //     drawStrokeStartIndex = strokeStartIndex;
-    // }
+    if (strokeStartIndex > 0 && zoom < SNAPSHOT_ZOOM_THRESH) {;
+        drawCtx.globalCompositeOperation = "source-over";
+        try {
+            drawCtx.drawImage(copyCanvass, offsetX-(W/2)*zoom, offsetY-(H/2)*zoom, W*zoom, H*zoom);
+        } catch (error) {
+            drawCtx.fillStyle = "black";
+            drawCtx.fillText(error, 5, 45);
+            return;
+        }
+        drawStrokeStartIndex = strokeStartIndex;
+    }
 
     drawCtx.setTransform(scale*zoom, 0, 0, scale*zoom, offsetX*scale, offsetY*scale);
     let screenMinX = -offsetX/zoom;
