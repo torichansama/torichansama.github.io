@@ -97,15 +97,14 @@ function drawCtxRedraw() {
     //Drawing strokes using one continuous line
     for(let i = drawStrokeStartIndex; i < strokes.length; i++) {
         let stroke = strokes[i];
-        drawCtx.globalCompositeOperation = stroke.strokeColor == DRAW_COLOR ? "source-over" : "destination-out";
+        if (!(stroke.minX < screenMaxX && stroke.maxX > screenMinX && stroke.minY < screenMaxY && stroke.maxY > screenMinY)) continue; //Skip strokes not on screen
 
-        if (!(stroke.minX < screenMaxX && stroke.maxX > screenMinX && stroke.minY < screenMaxY && stroke.maxY > screenMinY)) {
-            continue;
-        }
         numStrokesRendered++;
 
+        drawCtx.globalCompositeOperation = stroke.strokeColor == DRAW_COLOR ? "source-over" : "destination-out";
+
         //Render single length strokes as circles since iOS doesn't render lines that end at the same point they start
-        if (Math.round(stroke.x[0]) == Math.round(stroke.x[stroke.x.length-1]) && Math.round(stroke.y[0]) == Math.round(stroke.y[stroke.y.length-1])) { 
+        if (Math.round(stroke.x[0]) == Math.round(stroke.x[stroke.x.length-1]) && Math.round(stroke.y[0]) == Math.round(stroke.y[stroke.y.length-1]) && stroke.x.length <= 2) { 
             drawCtx.setTransform(scale, 0, 0, scale, 0, 0);
 
             drawCtx.fillStyle = stroke.strokeColor;
