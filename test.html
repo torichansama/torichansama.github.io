@@ -155,25 +155,39 @@ var shouldGrabSnapshot = false;
 
 var strokes = [];
 function PenStroke (xStart, yStart, strokeColor, zoom) {
-    this.x = [(xStart-offsetX)/zoom];
-    this.y = [(yStart-offsetY)/zoom];
     this.brushSize = BRUSH_SIZE/zoom;
     this.strokeColor = strokeColor;
+
     lastStrokeX = xStart;
     lastStrokeY = yStart;
-    this.minX = this.x[0]-this.brushSize;
-    this.maxX = this.x[0]+this.brushSize;
-    this.minY = this.y[0]-this.brushSize;
-    this.maxY = this.y[0]+this.brushSize;
+
+    let x = (xStart-offsetX)/zoom;
+    let y = (yStart-offsetY)/zoom;
+    this.path = new Path2D();
+    this.path.arc(x, y, 0, 0, TAU, false);
+    this.path.moveTo(x, y);
+
+    this.x = [x];
+    this.y = [y];
+    
+    this.minX = x-this.brushSize;
+    this.maxX = x+this.brushSize;
+    this.minY = y-this.brushSize;
+    this.maxY = y+this.brushSize;
 }
 function extendCurrentStroke (rawX, rawY, zoom) {
     if (currentStroke == undefined) return;
+
+    lastStrokeX = rawX;
+    lastStrokeY = rawY;
+
     let x = (rawX-offsetX)/zoom;
     let y = (rawY-offsetY)/zoom;
     currentStroke.x.push(x);
     currentStroke.y.push(y);
-    lastStrokeX = rawX;
-    lastStrokeY = rawY;
+    currentStroke.path.lineTo(x, y);
+    currentStroke.length = currentStroke.length+1;
+
     currentStroke.minX = Math.min(currentStroke.minX, x-currentStroke.brushSize);
     currentStroke.maxX = Math.max(currentStroke.maxX, x+currentStroke.brushSize);
     currentStroke.minY = Math.min(currentStroke.minY, y-currentStroke.brushSize);
