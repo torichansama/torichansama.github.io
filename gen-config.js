@@ -15,4 +15,4 @@ const defaultSettings = {
 const COMP_TESTING = true; //Use for correct screen sizing on non-iOS devices
 const DEBUG_VIEW = false; //Display debug stack on side of screen (Not super functional)
 const SCORE_DEBUG = false; //Set this to view the scoring process for debugging purposes (Not super functional)
-const VERSION = "10.7.7";
+const VERSION = "10.7.8";

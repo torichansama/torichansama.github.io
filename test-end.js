@@ -225,7 +225,7 @@ function saveScore() {
             minimumIntegerDigits: 1, 
             minimumFractionDigits: 4 //Guaruntees 4 decimal places
         });
-        score = scoreFormat.format(score)+"%";
+        score = scoreFormat.format(Math.abs(score))+"%";
     }
     sessionStorage.scoreObject = JSON.stringify(score); //Stores drawing score in the session storages
 
