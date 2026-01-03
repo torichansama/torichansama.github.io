@@ -115,7 +115,7 @@ function drawCtxRedraw() {
         }
 
         drawCtx.lineWidth = stroke.brushSize*2;
-        drawCtx.stroke(stroke.path);
+        // drawCtx.stroke(stroke.path);
     };
     drawCtx.setTransform(scale, 0, 0, scale, 0, 0);
 
@@ -139,11 +139,6 @@ function figureCtxRedraw () {
     let minAngle = SELECTED_FIGURE.minTheta;
     let maxAngle = SELECTED_FIGURE.maxTheta;
     
-    //Drawing the visible part of the figure outline
-    if (SELECTED_FIGURE.maxTheta-TAU != SELECTED_FIGURE.minTheta) {
-        maxAngle = Math.min(maxAngle, SELECTED_FIGURE.maxTheta);
-        minAngle = Math.max(minAngle, SELECTED_FIGURE.minTheta);
-    }
     let thetaInc = (maxAngle-minAngle)/resolution;
 
     let innerPath = new Path2D();
