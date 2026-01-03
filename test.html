@@ -164,7 +164,7 @@ function PenStroke (xStart, yStart, strokeColor, zoom) {
     let x = (xStart-offsetX)/zoom;
     let y = (yStart-offsetY)/zoom;
     this.path = new Path2D();
-    this.path.arc(x, y, 0, 0, TAU, false);
+    // this.path.arc(x, y, 0, 0, TAU, false);
     this.path.moveTo(x, y);
 
     this.x = [x];
@@ -186,7 +186,6 @@ function extendCurrentStroke (rawX, rawY, zoom) {
     currentStroke.x.push(x);
     currentStroke.y.push(y);
     currentStroke.path.lineTo(x, y);
-    currentStroke.length = currentStroke.length+1;
 
     currentStroke.minX = Math.min(currentStroke.minX, x-currentStroke.brushSize);
     currentStroke.maxX = Math.max(currentStroke.maxX, x+currentStroke.brushSize);

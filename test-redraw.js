@@ -45,17 +45,24 @@ function grabSnapshot() {
 
     copyCtx.clearRect(0, 0, COPY_W, COPY_H);
     let drawToCopyScale = COPY_W/W;
-
     copyCtx.setTransform(drawToCopyScale, 0, 0, drawToCopyScale, COPY_W/2, COPY_H/2);
+
+    copyCtx.strokeStyle = DRAW_COLOR;
+    copyCtx.fillStyle = DRAW_COLOR;
 
     for(let i = 0; i < strokeStartIndex; i++) {
         stroke = strokes[i];
 
         copyCtx.globalCompositeOperation = stroke.strokeColor == DRAW_COLOR ? "source-over" : "destination-out";
 
-        copyCtx.strokeStyle = stroke.strokeColor;
-        copyCtx.lineWidth = stroke.brushSize*2;
+        if (Math.round(stroke.x[0]) == Math.round(stroke.x[stroke.x.length-1]) && Math.round(stroke.y[0]) == Math.round(stroke.y[stroke.y.length-1]) && stroke.x.length <= 2) { 
+            copyCtx.beginPath();
+            copyCtx.arc(stroke.x[0], stroke.y[0], stroke.brushSize, 0, TAU, false);
+            copyCtx.fill();
+            continue;
+        }
 
+        copyCtx.lineWidth = stroke.brushSize*2;
         copyCtx.stroke(stroke.path);
     };
     copyCtx.resetTransform();
@@ -79,6 +86,8 @@ function drawCtxRedraw() {
     }
 
     drawCtx.strokeStyle = DRAW_COLOR;
+    drawCtx.fillStyle = DRAW_COLOR;
+
     drawCtx.setTransform(scale*zoom, 0, 0, scale*zoom, offsetX*scale, offsetY*scale);
     let screenMinX = -offsetX/zoom;
     let screenMinY = -offsetY/zoom;
@@ -94,7 +103,14 @@ function drawCtxRedraw() {
 
         numStrokesRendered++;
 
-        drawCtx.globalCompositeOperation = stroke.strokeColor == DRAW_COLOR ? "source-over" : "destination-out";
+        drawCtx.globalCompositeOperation = (stroke.strokeColor == DRAW_COLOR ? "source-over" : "destination-out");
+
+        if (Math.round(stroke.x[0]) == Math.round(stroke.x[stroke.x.length-1]) && Math.round(stroke.y[0]) == Math.round(stroke.y[stroke.y.length-1]) && stroke.x.length <= 2) { 
+            drawCtx.beginPath();
+            drawCtx.arc(stroke.x[0], stroke.y[0], stroke.brushSize, 0, TAU, false);
+            drawCtx.fill();
+            continue;
+        }
 
         drawCtx.lineWidth = stroke.brushSize*2;
         drawCtx.stroke(stroke.path);
