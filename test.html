@@ -151,6 +151,7 @@ var rightHanded = true;
 var liveScoreDisplay = document.getElementById("liveScore");
 var debugData = [];
 let avgLatency = 0;
+var shouldGrabSnapshot = false;
 
 var strokes = [];
 function PenStroke (xStart, yStart, strokeColor, zoom) {
@@ -240,7 +241,12 @@ function mainRedraw() {
     drawCtxRedraw();
     figureCtxRedraw();
     avgLatency = 0.9*avgLatency + 0.1*(performance.now()-startTime);
-}    
+}
+
+function grabSnapshotManager() {
+    shouldGrabSnapshot = true;
+}
+setInterval(grabSnapshotManager, 3000);
 
 
 function updateDebugView() {
