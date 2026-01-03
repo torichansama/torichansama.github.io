@@ -77,6 +77,7 @@ const Y_SCALE = (H/2-60)/(SELECTED_FIGURE.maxY-AVG_Y);
 const SCALE = Math.min(X_SCALE, Y_SCALE);
 
 const BRUSH_SIZE = parseInt(JSON.parse(localStorage.brushSize))/600*SCALE;
+const SHOW_DEBUG = JSON.parse(localStorage.showDebug) == "true";
 
 
 //Canvas Setup and Styling-------------------------------------------------------------------------
@@ -208,6 +209,7 @@ sessionStorage.isTest = JSON.stringify("false"); //Clear any previously set isTe
 
 findMaxScore = false;
 computeScoringConstants();
+zoomOut();
 mainRedraw(); //Draw main content
 
 activatePrompt(handedness); //Call handedness prompt
@@ -229,8 +231,8 @@ function mainRedraw() {
     oldGridSize = dynamicGridSize;
 
     //Limit panning
-    offsetX = clamp(offsetX, W-W*0.51*zoom, W*0.51*zoom);
-    offsetY = clamp(offsetY, H-H*0.53*zoom, H*0.53*zoom);
+    offsetX = clamp(offsetX, W-W*0.5*zoom, W*0.5*zoom);
+    offsetY = clamp(offsetY, H-H*0.5*zoom, H*0.5*zoom);
 
     let startTime = performance.now();
     //Call each canvas' redraw functions
@@ -381,7 +383,7 @@ function decrementTimer() {
 //Zoom Handling------------------------------------------------------------------------------------
 //Reset to a centered view at a zoom of 1
 function zoomOut() {
-    zoom = 1;
+    zoom = 1.1;
     offsetX = W/2;
     offsetY = H/2;
     zoomX = offsetX;

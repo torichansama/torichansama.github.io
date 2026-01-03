@@ -127,11 +127,13 @@ function drawCtxRedraw() {
     drawCtx.setTransform(scale, 0, 0, scale, 0, 0);
 
     drawCtx.globalCompositeOperation = "source-over";
-    // drawCtx.fillStyle = "black";
-    // drawCtx.fillText("# Strokes: " + numStrokesRendered, 5, H-15);
-    // drawCtx.fillText("Avg Latency: " + avgLatency, 5, H-30);
-    // drawCtx.fillText("Total Strokes: " + strokes.length, 5, H-45);
-    // drawCtx.fillText("Zoom: " + zoom, 5, H-60);
+    if (SHOW_DEBUG) {
+        drawCtx.fillStyle = "black";
+        drawCtx.fillText("# Strokes: " + numStrokesRendered, 5, H-15);
+        drawCtx.fillText("Avg Latency: " + avgLatency, 5, H-30);
+        drawCtx.fillText("Total Strokes: " + strokes.length, 5, H-45);
+        drawCtx.fillText("Zoom: " + zoom, 5, H-60);
+    }
 }
 
 //Drawing the content of the figure canvas---------------------------------------------------------
