@@ -85,8 +85,10 @@ function drawCtxRedraw() {
         drawStrokeStartIndex = strokeStartIndex;
     }
 
-    drawCtx.strokeStyle = DRAW_COLOR;
-    drawCtx.fillStyle = DRAW_COLOR;
+    // drawCtx.strokeStyle = DRAW_COLOR;
+    // drawCtx.fillStyle = DRAW_COLOR;
+    drawCtx.strokeStyle = "Green";
+    drawCtx.fillStyle = "Green";
 
     drawCtx.setTransform(scale*zoom, 0, 0, scale*zoom, offsetX*scale, offsetY*scale);
     let screenMinX = -offsetX/zoom;
