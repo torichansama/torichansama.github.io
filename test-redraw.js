@@ -132,6 +132,8 @@ function drawCtxRedraw() {
         drawCtx.fillText("Avg Latency: " + avgLatency, 5, H-30);
         drawCtx.fillText("Total Strokes: " + strokes.length, 5, H-45);
         drawCtx.fillText("Zoom: " + zoom, 5, H-60);
+        drawCtx.fillText("Start Index: " + strokeStartIndex, 5, H-75);
+        drawCtx.fillText("Grab: " + shouldGrabSnapshot, 5, H-90);
     }
 }
 
