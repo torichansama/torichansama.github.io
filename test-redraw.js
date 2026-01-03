@@ -51,7 +51,7 @@ function grabSnapshot() {
 
         copyCtx.globalCompositeOperation = stroke.strokeColor == DRAW_COLOR ? "source-over" : "destination-out";
 
-        if (Math.round(stroke.x[0]) == Math.round(stroke.x[stroke.x.length-1]*drawToCopyScale) && Math.round(stroke.y[0]*drawToCopyScale) == Math.round(stroke.y[stroke.y.length-1]*drawToCopyScale) && stroke.x.length <= 2) { 
+        if (Math.round(stroke.x[0]*drawToCopyScale) == Math.round(stroke.x[stroke.x.length-1]*drawToCopyScale) && Math.round(stroke.y[0]*drawToCopyScale) == Math.round(stroke.y[stroke.y.length-1]*drawToCopyScale) && stroke.x.length <= 2) { 
             copyCtx.fillStyle = stroke.strokeColor;
             circle(Math.round(stroke.x[0]*drawToCopyScale+COPY_W/2), Math.round(stroke.y[0]*drawToCopyScale+COPY_H/2), stroke.brushSize*drawToCopyScale, true, copyCtx);
             continue;
