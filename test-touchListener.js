@@ -143,10 +143,10 @@ figureCanvas.addEventListener("touchend", e => { //Clear the Eraser Outline
         currentStroke = undefined;
         if (LIVE_SCORING) scoreFigure();
     }
-    // if (shouldGrabSnapshot) {
-    //     shouldGrabSnapshot = false;
+    if (shouldGrabSnapshot) {
+        shouldGrabSnapshot = false;
         grabSnapshot();
-    // }
+    }
     
     // setDebugInfo("Raw Tx", Math.round(strokes[strokes.length-1].x[0]*100)/100);
     // setDebugInfo("Raw Ty", Math.round(strokes[strokes.length-1].y[0]*100)/100);
