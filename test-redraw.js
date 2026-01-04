@@ -44,8 +44,8 @@ function grabSnapshot() {
     strokeStartIndex = strokes.length;
 
     copyCtx.clearRect(0, 0, COPY_W, COPY_H);
-    let drawToCopyScale = COPY_W/W*2;
-    copyCtx.setTransform(drawToCopyScale, 0, 0, drawToCopyScale, COPY_W, COPY_H);
+    let drawToCopyScale = COPY_W/W;
+    copyCtx.setTransform(drawToCopyScale, 0, 0, drawToCopyScale, COPY_W/2, COPY_H/2);
 
     copyCtx.strokeStyle = DRAW_COLOR;
     copyCtx.fillStyle = DRAW_COLOR;
@@ -76,7 +76,7 @@ function drawCtxRedraw() {
     if (strokeStartIndex > 0 && zoom < SNAPSHOT_ZOOM_THRESH) {;
         drawCtx.globalCompositeOperation = "source-over";
         try {
-            drawCtx.drawImage(copyCanvas, offsetX-(W/2)*zoom, offsetY-(H/2)*zoom, W*zoom/2, H*zoom/2);
+            drawCtx.drawImage(copyCanvas, offsetX-(W/2)*zoom, offsetY-(H/2)*zoom, W*zoom, H*zoom);
         } catch (error) {
             drawCtx.fillStyle = "black";
             drawCtx.fillText(error, 5, 45);
@@ -85,10 +85,8 @@ function drawCtxRedraw() {
         drawStrokeStartIndex = strokeStartIndex;
     }
 
-    // drawCtx.strokeStyle = DRAW_COLOR;
-    // drawCtx.fillStyle = DRAW_COLOR;
-    drawCtx.strokeStyle = "Green";
-    drawCtx.fillStyle = "Green";
+    drawCtx.strokeStyle = DRAW_COLOR;
+    drawCtx.fillStyle = DRAW_COLOR;
 
     drawCtx.setTransform(scale*zoom, 0, 0, scale*zoom, offsetX*scale, offsetY*scale);
     let screenMinX = -offsetX/zoom;
@@ -115,7 +113,7 @@ function drawCtxRedraw() {
         }
 
         drawCtx.lineWidth = stroke.brushSize*2;
-        // drawCtx.stroke(stroke.path);
+        drawCtx.stroke(stroke.path);
     };
     drawCtx.setTransform(scale, 0, 0, scale, 0, 0);
 
