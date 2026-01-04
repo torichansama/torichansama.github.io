@@ -45,7 +45,6 @@ const SELECTED_FIGURE = figures[0];
 const AVG_Y = (SELECTED_FIGURE.minY+SELECTED_FIGURE.maxY)/2;
 
 const THETA_RESOLUTION_HIGH_LOD = 700;
-const THETA_RESOLUTION_LOW_LOD = 305;
 
 const PI = Math.PI;
 const TAU = 2*Math.PI;
